@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="white_15">#26FFFFFF</color>
+    <color name="color_primary">#2C3137</color>
+    <color name="color_primary_50">#80026CB9</color>//chng
+    <color name="color_primary_15">#26026CB9</color>
+    <color name="color_primary_5">#0D026CB9</color>
+    <color name="gray">#888888</color>
+    <color name="dove_gray">#666666</color>
+    <color name="pomegranate">#EC540E</color>
+    <color name="rolling_stone">#797C7F</color>
+    <color name="woodsmoke">#0E1013</color>
+    <color name="mako">#41464B</color>
+</resources>
