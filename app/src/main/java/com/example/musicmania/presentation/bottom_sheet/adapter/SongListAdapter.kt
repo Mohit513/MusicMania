@@ -6,15 +6,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 
-class SongListAdapter(var songItemList: ArrayList<SongListDataModel>,
-                      private val itemClickListener: (String) -> Unit) : RecyclerView.Adapter<SongListAdapter.SongViewHolder>() {
+class SongListAdapter(
+    var songItemList: ArrayList<SongListDataModel>,
+    private val itemClickListener: selectedSong
+) : RecyclerView.Adapter<SongListAdapter.SongViewHolder>() {
 
-    class SongViewHolder(val binding: ItemSongsListBinding) : RecyclerView.ViewHolder(binding.root) {
+    class SongViewHolder(val binding: ItemSongsListBinding) :
+        RecyclerView.ViewHolder(binding.root) {
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
-        val binding = ItemSongsListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding =
+            ItemSongsListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return SongViewHolder(binding)
     }
+
     override fun getItemCount(): Int {
         return songItemList.size
     }
@@ -25,10 +31,14 @@ class SongListAdapter(var songItemList: ArrayList<SongListDataModel>,
             tvTitle.text = item.title
             tvSubTitle.text = item.subTitle
 
-            root.setOnClickListener{
-               itemClickListener(item.title.toString() ?: "")
+            root.setOnClickListener {
+                itemClickListener.onSelectSongItem(position)
             }
         }
 
+    }
+
+    interface selectedSong {
+        fun onSelectSongItem(position: Int)
     }
 }

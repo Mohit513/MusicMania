@@ -12,17 +12,23 @@
         style="@style/outfit_regular_large"
         android:textColor="@color/dove_gray"
         android:layout_marginHorizontal="@dimen/_4sdp"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toTopOf="@id/seekBar"
+        app:layout_constraintBottom_toBottomOf="@id/seekBar"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="@dimen/_2sdp"/>
 
-    <androidx.appcompat.widget.AppCompatSeekBar
+    <com.google.android.material.slider.Slider
         android:id="@+id/seekBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:progressTint="@color/dove_gray"
         android:thumbTint="@color/white"
-        android:scrollbarSize="@dimen/_4sdp"
+        android:scrollbarSize="@dimen/_2sdp"
+        app:thumbStrokeWidth="@dimen/_8sdp"
+        app:thumbRadius="@dimen/_8sdp"
+        app:thumbHeight="@dimen/_10sdp"
+        app:trackColor="@color/dove_gray"
+        app:trackHeight="@dimen/_6sdp"
         android:layout_marginHorizontal="@dimen/_4sdp"
         android:layout_marginTop="@dimen/_2sdp"
         app:layout_constraintTop_toTopOf="parent"
@@ -38,7 +44,8 @@
         android:textColor="@color/dove_gray"
         android:layout_marginTop="@dimen/_2sdp"
         android:layout_marginHorizontal="@dimen/_4sdp"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toTopOf="@id/seekBar"
+        app:layout_constraintBottom_toBottomOf="@id/seekBar"
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
