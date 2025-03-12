@@ -3,6 +3,7 @@ package com.example.musicmania.presentation.bottom_sheet.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.musicmania.R
 import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 
@@ -27,13 +28,14 @@ class SongListAdapter(
 
     override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
         val item = songItemList[position]
-        holder.binding.layoutItemSongList.apply {
-            tvTitle.text = item.title
-            tvSubTitle.text = item.subTitle
+        holder.binding.apply {
+            layoutItemSongList.tvTitle.text = item.title
+            layoutItemSongList.tvSubTitle.text = item.subTitle
 
             root.setOnClickListener {
                 itemClickListener.onSelectSongItem(position)
             }
+
         }
 
     }

@@ -27,8 +27,8 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivPlayForward"
-            android:layout_width="@dimen/_42sdp"
-            android:layout_height="@dimen/_42sdp"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="@dimen/_40sdp"
             android:layout_margin="@dimen/_4sdp"
             android:background="@color/woodsmoke"
             android:padding="2dp"

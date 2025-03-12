@@ -54,5 +54,4 @@ dependencies {
 
     implementation(libs.ssp.android)
 
-    implementation ("com.google.android.exoplayer2:exoplayer:2.18.2")
 }

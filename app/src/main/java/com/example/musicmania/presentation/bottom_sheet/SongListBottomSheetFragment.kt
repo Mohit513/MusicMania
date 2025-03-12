@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.example.musicmania.R
 import com.example.musicmania.databinding.FragmentSongListBottomSheetBinding
+import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.adapter.SongListAdapter
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 import com.example.musicmania.presentation.dashboard.SongsActivity
@@ -58,9 +60,12 @@ class SongListBottomSheetFragment : BottomSheetDialogFragment(), SongListAdapter
             title = songItemList[position].title
             songThumbnail = songItemList[position].songThumbnail
             subTitle = songItemList[position].subTitle
+            icon = songItemList[position].icon
         }
-        parentActivity?.setCurrentSongIndex(position)
+        parentActivity?.currentSongIndex(position)
+
         dismiss()
     }
+
 
 }

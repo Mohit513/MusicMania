@@ -21,7 +21,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearance="@style/circle_image_view"
-        app:srcCompat="@drawable/union"
+        app:srcCompat="@drawable/ic_left"
         app:strokeColor="@color/white"
         app:strokeWidth="@dimen/_1sdp" />
 
@@ -41,6 +41,21 @@
         app:srcCompat="@drawable/union"
         app:strokeColor="@color/white"
         app:strokeWidth="@dimen/_1sdp" />
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvVolumePercentage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Volume: 50%"
+        android:textSize="16sp"
+        android:alpha="0.4"
+        android:textColor="@color/dove_gray"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="10dp"
+        app:layout_constraintStart_toStartOf="@id/ivSongThumbnail"
+        app:layout_constraintBottom_toBottomOf="@id/ivSongThumbnail"
+        app:layout_constraintTop_toTopOf="@id/ivSongThumbnail"
+        app:layout_constraintEnd_toEndOf="@id/ivSongThumbnail"/>
 
 
     <include
@@ -64,7 +79,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:shapeAppearance="@style/circle_image_view"
-        app:srcCompat="@drawable/ic_left"
+        app:srcCompat="@drawable/union"
         app:strokeColor="@color/white"
         app:strokeWidth="@dimen/_1sdp" />
 
@@ -87,6 +102,7 @@
         android:background="@color/woodsmoke"
         android:padding="2dp"
         android:scaleType="center"
+        android:elevation="@dimen/_16sdp"
         android:tint="@color/rolling_stone"
         app:layout_constraintBottom_toBottomOf="@id/ivSongPlay"
         app:layout_constraintStart_toStartOf="parent"
@@ -104,6 +120,7 @@
         android:layout_marginVertical="@dimen/_14sdp"
         android:background="@color/pomegranate"
         android:padding="2dp"
+        android:elevation="@dimen/_16sdp"
         android:scaleType="center"
         android:tint="@color/white"
         app:layout_constraintBottom_toTopOf="@id/ivSwipe"
@@ -120,7 +137,7 @@
         android:layout_height="@dimen/_58sdp"
         android:layout_margin="@dimen/_16sdp"
         android:background="@color/woodsmoke"
-        android:elevation="@dimen/_12sdp"
+        android:elevation="@dimen/_16sdp"
         android:padding="2dp"
         android:scaleType="center"
         android:tint="@color/rolling_stone"
