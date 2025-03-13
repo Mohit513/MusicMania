@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -30,7 +31,7 @@ import com.google.android.material.slider.Slider
 class SongsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySongsBinding
-    private lateinit var itemSongsListBinding : ItemSongsListBinding
+    private lateinit var itemSongsListBinding: ItemSongsListBinding
     private lateinit var mediaPlayer: MediaPlayer
     private lateinit var volumeText: TextView
     private lateinit var audioManager: AudioManager
@@ -42,6 +43,9 @@ class SongsActivity : AppCompatActivity() {
 
     private val handler = Handler(Looper.getMainLooper())
 
+    private lateinit var rotationAnimator: ObjectAnimator
+
+    // Runnable for updating seekbar based on media player progress
     private val updateSeekBarRunnable = object : Runnable {
         override fun run() {
             if (mediaPlayer.isPlaying) {
@@ -56,6 +60,7 @@ class SongsActivity : AppCompatActivity() {
         }
     }
 
+    // Runnable for updating the current time label
     private val updateCurrentTimeRunnable = object : Runnable {
         override fun run() {
             if (mediaPlayer.isPlaying) {
@@ -66,6 +71,7 @@ class SongsActivity : AppCompatActivity() {
         }
     }
 
+    // Activity lifecycle methods
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
@@ -78,10 +84,13 @@ class SongsActivity : AppCompatActivity() {
         setUpListeners()
         setUpView()
 
+        // Register broadcast receiver for volume change
         val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         registerReceiver(volumeReceiver, filter)
 
-        binding.layoutSongProgress.seekBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
+        // Slider listener for seeking
+        binding.layoutSongProgress.seekBar.addOnSliderTouchListener(object :
+            Slider.OnSliderTouchListener {
             override fun onStartTrackingTouch(slider: Slider) {}
 
             override fun onStopTrackingTouch(slider: Slider) {
@@ -89,6 +98,7 @@ class SongsActivity : AppCompatActivity() {
             }
         })
 
+        // Slider value change listener
         binding.layoutSongProgress.seekBar.addOnChangeListener { _, value, _ ->
             updateCurrentTime(value)
             if (value == mediaPlayer.duration.toFloat()) {
@@ -109,8 +119,8 @@ class SongsActivity : AppCompatActivity() {
 
     private fun setUpListeners() {
         binding.tvOpenSongList.setOnClickListener {
-            val bottomSheetFragment = SongListBottomSheetFragment()
-            bottomSheetFragment.show(supportFragmentManager, "myList")
+            val bottomSheetFragment = SongListBottomSheetFragment(songList)
+            bottomSheetFragment.show(supportFragmentManager, "songList")
         }
 
         binding.apply {
@@ -129,17 +139,18 @@ class SongsActivity : AppCompatActivity() {
     }
 
     private fun setUpView() {
-        songList = SongUtils.getSongsFromDevice(contentResolver) as ArrayList<SongListDataModel>
+        songList.addAll(SongUtils.getSongsFromDevice(contentResolver))
         if (songList.isNotEmpty()) {
             currentSong.apply {
                 title = songList[currentSongIndex].title
                 subTitle = songList[currentSongIndex].subTitle
                 songThumbnail = songList[currentSongIndex].songThumbnail
                 icon = songList[currentSongIndex].icon
+                artist = songList[currentSongIndex].artist
             }
             binding.layoutSongName.tvTitle.text = currentSong.title
-            binding.layoutSongName.tvSubTitle.text = currentSong.subTitle
-            itemSongsListBinding.ivPlayForward.setImageResource(currentSong.icon)
+            binding.layoutSongName.tvSubTitle.text = currentSong.artist
+            itemSongsListBinding.ivPlayAndPause.setImageResource(currentSong.icon)
         } else {
             setDefaultSong()
         }
@@ -183,7 +194,7 @@ class SongsActivity : AppCompatActivity() {
         }
 
         val intent = Intent(this, MusicService::class.java)
-        intent.putExtra("song",currentSong)
+        intent.putExtra("song", currentSong)
         startService(intent)
 
         mediaPlayer.start()
@@ -194,7 +205,6 @@ class SongsActivity : AppCompatActivity() {
         handler.post(updateCurrentTimeRunnable)
         startContinuousThumbnailRotation()
     }
-
 
     private fun pauseSong() {
         mediaPlayer.pause()
@@ -209,11 +219,19 @@ class SongsActivity : AppCompatActivity() {
     private fun resetAndNewSong() {
         currentSongIndex = (currentSongIndex + 1) % songList.size
         updateCurrentSongUI()
+        updateBottomSheetIcon()
     }
 
     private fun resetAndLastSong() {
         currentSongIndex = if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
         updateCurrentSongUI()
+        updateBottomSheetIcon()
+    }
+
+    private fun updateBottomSheetIcon() {
+        val bottomSheetFragment =
+            supportFragmentManager.findFragmentByTag("songList") as? SongListBottomSheetFragment
+        bottomSheetFragment?.updatePlayPauseIcon(currentSongIndex, isPlaying)
     }
 
     private fun updateCurrentSongUI() {
@@ -222,17 +240,19 @@ class SongsActivity : AppCompatActivity() {
             subTitle = songList[currentSongIndex].subTitle
             songThumbnail = songList[currentSongIndex].songThumbnail
             icon = songList[currentSongIndex].icon
+            artist = songList[currentSongIndex].artist
         }
 
         binding.layoutSongName.tvTitle.text = currentSong.title
-        binding.layoutSongName.tvSubTitle.text = currentSong.subTitle
+        binding.layoutSongName.tvSubTitle.text = currentSong.artist
         binding.ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.ic_play)
         updatePlayForwardIcon(currentSong.icon)
 
-        mediaPlayer.reset()
+        if (::mediaPlayer.isInitialized) {
+            mediaPlayer.reset()
+        }
         setUpMediaPlayer()
         playSong()
-
     }
 
     private fun updatePlayForwardIcon(iconResourceId: Int? = R.drawable.ic_pause) {
@@ -264,11 +284,13 @@ class SongsActivity : AppCompatActivity() {
     fun currentSongIndex(index: Int) {
         currentSongIndex = index
         updateCurrentSongUI()
+        updateBottomSheetIcon()
     }
 
     private fun startContinuousThumbnailRotation() {
         if (isPlaying) {
-            val rotationAnimator = ObjectAnimator.ofFloat(binding.ivSongThumbnail, "rotation", 0f, 360f)
+            rotationAnimator =
+                ObjectAnimator.ofFloat(binding.ivSongThumbnail, "rotation", 0f, 360f)
             rotationAnimator.duration = 30000
             rotationAnimator.repeatCount = ObjectAnimator.INFINITE
             rotationAnimator.repeatMode = ObjectAnimator.RESTART
@@ -276,9 +298,14 @@ class SongsActivity : AppCompatActivity() {
         }
     }
 
+
     private fun stopContinuousThumbnailRotation() {
-        if (isPlaying) {
-            binding.ivSongThumbnail.animate().cancel()
+        if (::rotationAnimator.isInitialized) {
+//            rotationAnimator.pause()
+            rotationAnimator.cancel() // Stops the animation
+//            rotationAnimator.end() // Ensures the animation ends correctly
+        } else {
+            Toast.makeText(this, "Animator is not initialized", Toast.LENGTH_SHORT).show()
         }
     }
 

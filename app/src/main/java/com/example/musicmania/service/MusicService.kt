@@ -22,25 +22,34 @@ class MusicService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        mediaPlayer = MediaPlayer()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
-            currentSong = it.getSerializableExtra("song") as SongListDataModel
+            currentSong = it.getSerializableExtra("song") as? SongListDataModel
             playSong()
+            pauseSong()
         }
         return START_NOT_STICKY
     }
 
     private fun playSong() {
         currentSong?.let {
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(it.subTitle)  // Use the path or URI of the song
-                prepareAsync()
-                setOnPreparedListener { mp ->
-                    mp.start()
-                    showNotification()
-                }
+            mediaPlayer.reset()
+            mediaPlayer.setDataSource(it.subTitle)
+            mediaPlayer.prepareAsync()
+            mediaPlayer.setOnPreparedListener { mPlayer ->
+                mPlayer.start()
+                showNotification()
+            }
+        }
+    }
+    private fun pauseSong() {
+        currentSong?.let {
+            mediaPlayer.setOnPreparedListener { mPlayer ->
+                mPlayer.pause()
+                showNotification()
             }
         }
     }
@@ -57,7 +66,7 @@ class MusicService : Service() {
 
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle(currentSong?.title)
-            .setContentText(currentSong?.subTitle)
+            .setContentText(currentSong?.artist)
             .setSmallIcon(R.drawable.app_logo)
             .addAction(playPauseAction)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -71,10 +80,9 @@ class MusicService : Service() {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_IMMUTABLE)
         } else {
-            PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getService(this, 0, actionIntent, PendingIntent.FLAG_UPDATE_CURRENT)
         }
     }
-
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

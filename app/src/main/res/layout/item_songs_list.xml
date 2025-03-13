@@ -22,11 +22,11 @@
             android:layout_margin="@dimen/_6sdp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/ivPlayForward"
+            app:layout_constraintEnd_toStartOf="@id/ivPlayAndPause"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/ivPlayForward"
+            android:id="@+id/ivPlayAndPause"
             android:layout_width="@dimen/_40sdp"
             android:layout_height="@dimen/_40sdp"
             android:layout_margin="@dimen/_4sdp"

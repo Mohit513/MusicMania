@@ -33,9 +33,11 @@ object SongUtils {
             while (it.moveToNext()) {
                 val title = it.getString(it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE))
                 val path = it.getString(it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA))
+                val artist = it.getString(it.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST))
                 val audioList = SongListDataModel(
                     title = title,
                     subTitle = path,
+                    artist = artist,
                     songThumbnail = com.example.musicmania.R.drawable.app_logo
                 )
                 songItemList.add(audioList)

@@ -7,7 +7,9 @@ data class SongListDataModel(
     var title: String? = "ok",
     var subTitle: String? = "",
     var songThumbnail: Int? = null,
-    val artist: String? = "",
+    var artist: String? = "",
     val length : String? = "",
-    var icon : Int = R.drawable.ic_pause
+    var icon : Int = R.drawable.ic_pause,
+    var isPlaying: Boolean = false
+
 ) : Serializable
