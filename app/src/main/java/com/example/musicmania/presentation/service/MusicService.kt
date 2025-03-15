@@ -1,5 +1,6 @@
 package com.example.musicmania.presentation.service
 
+import android.animation.ObjectAnimator
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -191,7 +192,6 @@ class MusicService : Service() {
             updateNotification()
         }
     }
-
     private fun playNextSong() {
         currentSongIndex = (currentSongIndex + 1) % songList.size
         playSong(songList[currentSongIndex])
