@@ -1,5 +1,6 @@
 package com.example.musicmania.presentation.dashboard
 
+import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -15,6 +16,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PatternMatcher
+import android.view.KeyEvent
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -27,11 +30,6 @@ import com.example.musicmania.presentation.service.MusicService
 import com.example.musicmania.utils.SongUtils
 import com.google.android.material.slider.Slider
 
-// Define the ProgressUpdateCallback interface
-interface ProgressUpdateCallback {
-    fun onProgressUpdated(progress: Float)
-}
-
 class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListListener {
     private lateinit var binding: ActivitySongsBinding
     private lateinit var volumeText: TextView
@@ -41,6 +39,8 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     private var songList: ArrayList<SongListDataModel> = arrayListOf()
     private var currentSongIndex = 0
     private var isPlaying = false
+
+    private var rotationAnimation: ObjectAnimator? = null
 
     private var musicService: MusicService? = null
     private var isBound = false
@@ -62,28 +62,24 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 MusicService.BROADCAST_PLAYBACK_STATE -> {
-                    isPlaying = intent.getBooleanExtra("isPlaying", false)
-                    currentSongIndex = intent.getIntExtra("currentIndex", currentSongIndex)
-                    val title = intent.getStringExtra("title")
-                    val artist = intent.getStringExtra("artist")
-                    val thumbnail = intent.getIntExtra("thumbnail", R.drawable.ic_play)
-                    val subTitle = intent.getStringExtra("subTitle")
-                    val icon = intent.getIntExtra("icon", R.drawable.ic_play)
+                    val isPlaying = intent.getBooleanExtra("isPlaying", false)
+                    val currentIndex = intent.getIntExtra("currentIndex", -1)
                     val duration = intent.getIntExtra("duration", 0)
                     val currentPosition = intent.getIntExtra("currentPosition", 0)
-
-                    updatePlaybackState(isPlaying)
-                    updateSongInfo(title, artist, thumbnail, subTitle, icon)
-                    updateProgress(currentPosition, duration) { _ ->
-                        // Progress is handled in updateProgress
+                    
+                    if (currentIndex != -1 && currentIndex < songList.size) {
+                        currentSongIndex = currentIndex
+                        currentSong = songList[currentIndex]
+                        updateSongInfo(currentSong)
                     }
+                    
+                    updatePlaybackState(isPlaying)
+                    updateProgress(currentPosition, duration) {}
                 }
                 MusicService.BROADCAST_PROGRESS -> {
                     val currentPosition = intent.getIntExtra("currentPosition", 0)
                     val duration = intent.getIntExtra("duration", 0)
-                    updateProgress(currentPosition, duration) { _ ->
-                        // Progress is handled in updateProgress
-                    }
+                    updateProgress(currentPosition, duration) {}
                 }
             }
         }
@@ -108,8 +104,8 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         setUpListeners()
         setUpView()
 
-        // Handle notification click
         intent?.let { handleNotificationIntent(it) }
+
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -117,6 +113,75 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             super.onNewIntent(intent)
         }
         intent?.let { handleNotificationIntent(it) }
+    }
+
+    private fun updatePlaybackState(isPlaying: Boolean) {
+        this.isPlaying = isPlaying
+        binding.apply {
+            // Update play/pause button
+            ivSongPlay.setImageResource(
+                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+            )
+            
+            // Update thumbnail rotation
+            if (isPlaying) {
+                startThumbnailRotation()
+            } else {
+                stopThumbnailRotation()
+            }
+        }
+    }
+
+    private fun startThumbnailRotation() {
+        rotationAnimation?.cancel()
+        rotationAnimation = ObjectAnimator.ofFloat(
+            binding.ivSongThumbnail,
+            View.ROTATION,
+            binding.ivSongThumbnail.rotation,
+            binding.ivSongThumbnail.rotation + 360f
+        ).apply {
+            duration = 8000 // 8 seconds per rotation
+            interpolator = android.view.animation.LinearInterpolator()
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
+    }
+
+    private fun stopThumbnailRotation() {
+        rotationAnimation?.cancel()
+        rotationAnimation = null
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> {
+                audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.ADJUST_RAISE,
+                    AudioManager.FLAG_SHOW_UI
+                )
+                updateDeviceVolume()
+                true
+            }
+            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                audioManager.adjustStreamVolume(
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.ADJUST_LOWER,
+                    AudioManager.FLAG_SHOW_UI
+                )
+                updateDeviceVolume()
+                true
+            }
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            updateDeviceVolume()
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     private fun handleNotificationIntent(intent: Intent) {
@@ -143,9 +208,13 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
 
-        // Start progress updates
         handler = Handler(Looper.getMainLooper())
         startProgressUpdates()
+
+        // Resume rotation if playing
+        if (isPlaying) {
+            startThumbnailRotation()
+        }
     }
 
     override fun onPause() {
@@ -159,6 +228,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         }
 
         // Clean up resources
+        stopThumbnailRotation()
         handler.removeCallbacksAndMessages(null)
         if (isBound) {
             unbindService(serviceConnection)
@@ -185,8 +255,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
                     volumeFilter,
                     Context.RECEIVER_EXPORTED
                 )
-                
-                // Our music service broadcasts should not be exported
+
                 registerReceiver(
                     playbackReceiver,
                     playbackFilter,
@@ -204,8 +273,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     private fun setUpListeners() {
         binding.apply {
             tvOpenSongList.setOnClickListener {
-                val bottomSheetFragment = SongListBottomSheetFragment(songList)
-                bottomSheetFragment.show(supportFragmentManager, "songList")
+                showSongListBottomSheet()
             }
 
             ivSongPlay.setOnClickListener {
@@ -242,13 +310,21 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         }
     }
 
+    private fun showSongListBottomSheet() {
+        SongListBottomSheetFragment(
+            songList,
+            currentSongIndex,
+            isPlaying
+        ).show(supportFragmentManager, SongListBottomSheetFragment.TAG)
+    }
+
     private fun startProgressUpdates() {
         handler.postDelayed(object : Runnable {
             override fun run() {
                 musicService?.mediaPlayer?.let { player ->
                     if (player.isPlaying) {
                         updateProgress(player.currentPosition, player.duration) { _ ->
-                            // Progress is handled in updateProgress
+
                         }
                     }
                 }
@@ -270,46 +346,22 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         songList.addAll(SongUtils.getSongsFromDevice(contentResolver))
         if (songList.isNotEmpty()) {
             currentSong = songList[currentSongIndex]
-            updateSongInfo(
-                currentSong.title,
-                currentSong.artist,
-                currentSong.songThumbnail,
-                currentSong.subTitle,
-                currentSong.icon
-            )
+            updateSongInfo(currentSong)
             initializeService()
         } else {
             setDefaultSong()
         }
     }
 
-    private fun updateSongInfo(
-        title: String?,
-        artist: String?,
-        thumbnail: Int?,
-        subTitle: String?,
-        icon: Int?
-    ) {
-        binding.apply {
-            layoutSongName.tvTitle.text = title ?: "Unknown"
-            layoutSongName.tvSubTitle.text = artist ?: "Unknown Artist"
-            ivSongThumbnail.setImageResource(thumbnail ?: R.drawable.ic_play)
-
-            currentSong.apply {
-                this.title = title
-                this.artist = artist
-                this.songThumbnail = thumbnail
-                this.subTitle = subTitle
-                this.icon = icon ?: R.drawable.ic_play
+    private fun updateSongInfo(song: SongListDataModel?) {
+        song?.let {
+            binding.apply {
+                layoutSongName.tvTitle.text = it.title
+                layoutSongName.tvSubTitle.text = it.subTitle
+                // Update play/pause button based on current state
+                ivSongPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             }
         }
-    }
-
-    private fun updatePlaybackState(isPlaying: Boolean) {
-        this.isPlaying = isPlaying
-        binding.ivSongPlay.setImageResource(
-            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-        )
     }
 
     private fun updateProgress(currentPosition: Int, duration: Int, callback: (Any) -> Unit) {
@@ -378,8 +430,9 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     private fun updateDeviceVolume() {
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val volumePercentage = (currentVolume.toFloat() / maxVolume.toFloat()) * 100.0f
-        volumeText.text = String.format("Volume: %.0f%%", volumePercentage)
+        val volume = (currentVolume.toFloat() / maxVolume.toFloat()) * 100
+//        binding.tvVolumePercentage. = volume
+        binding.tvVolumePercentage.text = "${volume.toInt()}%"
     }
 
 
@@ -393,6 +446,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         
         currentSongIndex = position
         currentSong = songList[position]
+        updatePlaybackState(true) // Set to playing state when new song selected
         initializeService()
     }
 }

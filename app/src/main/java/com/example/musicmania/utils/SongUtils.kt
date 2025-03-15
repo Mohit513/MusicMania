@@ -39,7 +39,7 @@ object SongUtils {
                         title = title ?: "Unknown",
                         artist = artist ?: "Unknown Artist",
                         subTitle = path,
-                        songThumbnail = R.drawable.ic_play,
+                        songThumbnail = R.drawable.app_logo,
                         icon = R.drawable.ic_play,
                         length = length,
                         isPlaying = false

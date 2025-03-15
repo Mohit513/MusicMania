@@ -9,55 +9,57 @@ import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 
 class SongListAdapter(
     private val songList: ArrayList<SongListDataModel>,
-    private val itemClickListener: OnItemClickListener
+    private val onItemClick: (Int) -> Unit
 ) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {
 
-    interface OnItemClickListener {
-        fun onItemClick(position: Int)
-    }
+    private var currentPlayingPosition = -1
+    private var isCurrentlyPlaying = false
 
     inner class ViewHolder(private val binding: ItemSongsListBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        init {
-            binding.root.setOnClickListener {
-                val position = adapterPosition
-                if (position != RecyclerView.NO_POSITION) {
-                    itemClickListener.onItemClick(position)
-                }
-            }
-        }
-
-        fun bind(song: SongListDataModel) {
+        fun bind(song: SongListDataModel, position: Int) {
             binding.apply {
-                layoutItemSongList.tvTitle.text = song.title ?: "Unknown"
-                layoutItemSongList.tvSubTitle.text = song.artist ?: "Unknown Artist"
+                layoutItemSongList.tvTitle.text = song.title
+                layoutItemSongList.tvSubTitle.text = song.subTitle
+                
+                // Update play/pause icon based on current state
                 ivPlayAndPause.setImageResource(
-                    if (song.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                    when {
+                        position == currentPlayingPosition && isCurrentlyPlaying -> R.drawable.ic_pause
+                        else -> R.drawable.ic_play
+                    }
                 )
+
+                root.setOnClickListener {
+                    onItemClick(position)
+                    currentPlayingPosition = position
+                    isCurrentlyPlaying = true
+                    notifyDataSetChanged()
+                }
             }
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemSongsListBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
+        return ViewHolder(
+            ItemSongsListBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
         )
-        return ViewHolder(binding)
     }
+
+    override fun getItemCount() = songList.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(songList[position])
+        holder.bind(songList[position], position)
     }
 
-    override fun getItemCount(): Int = songList.size
-
     fun updatePlayingState(position: Int, isPlaying: Boolean) {
-        songList.forEachIndexed { index, song ->
-            song.isPlaying = index == position && isPlaying
-        }
+        currentPlayingPosition = position
+        isCurrentlyPlaying = isPlaying
         notifyDataSetChanged()
     }
 }
