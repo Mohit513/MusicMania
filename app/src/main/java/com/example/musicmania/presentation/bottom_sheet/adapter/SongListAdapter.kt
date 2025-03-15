@@ -8,40 +8,56 @@ import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 
 class SongListAdapter(
-    var songItemList: ArrayList<SongListDataModel>,
-    private val itemClickListener: selectedSong
-) : RecyclerView.Adapter<SongListAdapter.SongViewHolder>() {
+    private val songList: ArrayList<SongListDataModel>,
+    private val itemClickListener: OnItemClickListener
+) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {
 
-    class SongViewHolder(val binding: ItemSongsListBinding) : RecyclerView.ViewHolder(binding.root)
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
-        val binding = ItemSongsListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return SongViewHolder(binding)
+    interface OnItemClickListener {
+        fun onItemClick(position: Int)
     }
 
-    override fun getItemCount(): Int = songItemList.size
+    inner class ViewHolder(private val binding: ItemSongsListBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
-    override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
-        val item = songItemList[position]
-        holder.binding.apply {
-
-            if (item.isPlaying) {
-                ivPlayAndPause.setImageResource(R.drawable.ic_pause)
-            } else {
-                ivPlayAndPause.setImageResource(R.drawable.ic_play)
+        init {
+            binding.root.setOnClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    itemClickListener.onItemClick(position)
+                }
             }
-            layoutItemSongList.tvTitle.text = item.title
-            layoutItemSongList.tvSubTitle.text = item.artist
+        }
 
-            root.setOnClickListener {
-                itemClickListener.onSelectSongItem(position)
+        fun bind(song: SongListDataModel) {
+            binding.apply {
+                layoutItemSongList.tvTitle.text = song.title ?: "Unknown"
+                layoutItemSongList.tvSubTitle.text = song.artist ?: "Unknown Artist"
+                ivPlayAndPause.setImageResource(
+                    if (song.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                )
             }
         }
     }
 
-    interface selectedSong {
-        fun onSelectSongItem(position: Int)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = ItemSongsListBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return ViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.bind(songList[position])
+    }
+
+    override fun getItemCount(): Int = songList.size
+
+    fun updatePlayingState(position: Int, isPlaying: Boolean) {
+        songList.forEachIndexed { index, song ->
+            song.isPlaying = index == position && isPlaying
+        }
+        notifyDataSetChanged()
     }
 }
-
-

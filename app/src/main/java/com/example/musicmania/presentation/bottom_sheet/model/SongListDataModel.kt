@@ -1,15 +1,51 @@
 package com.example.musicmania.presentation.bottom_sheet.model
 
+import android.os.Parcel
+import android.os.Parcelable
 import com.example.musicmania.R
-import java.io.Serializable
+
 
 data class SongListDataModel(
-    var title: String? = "ok",
+    var title: String? = "",
     var subTitle: String? = "",
-    var songThumbnail: Int? = null,
+    var songThumbnail: Int? = R.drawable.ic_play,
     var artist: String? = "",
-    val length : String? = "",
-    var icon : Int = R.drawable.ic_pause,
+    var length: String? = "",
+    var icon: Int = R.drawable.ic_play,
     var isPlaying: Boolean = false
+) : Parcelable {
+    constructor(parcel: Parcel) : this(
+        parcel.readString(),
+        parcel.readString(),
+        parcel.readValue(Int::class.java.classLoader) as? Int,
+        parcel.readString(),
+        parcel.readString(),
+        parcel.readInt(),
+        parcel.readByte() != 0.toByte()
+    ) {
+    }
 
-) : Serializable
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(title)
+        parcel.writeString(subTitle)
+        parcel.writeValue(songThumbnail)
+        parcel.writeString(artist)
+        parcel.writeString(length)
+        parcel.writeInt(icon)
+        parcel.writeByte(if (isPlaying) 1 else 0)
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<SongListDataModel> {
+        override fun createFromParcel(parcel: Parcel): SongListDataModel {
+            return SongListDataModel(parcel)
+        }
+
+        override fun newArray(size: Int): Array<SongListDataModel?> {
+            return arrayOfNulls(size)
+        }
+    }
+}

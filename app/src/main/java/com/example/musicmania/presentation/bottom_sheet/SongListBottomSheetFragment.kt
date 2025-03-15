@@ -3,27 +3,32 @@ package com.example.musicmania.presentation.bottom_sheet
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.PatternMatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.musicmania.databinding.FragmentSongListBottomSheetBinding
 import com.example.musicmania.presentation.bottom_sheet.adapter.SongListAdapter
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
-import com.example.musicmania.presentation.dashboard.SongsActivity
 import com.example.musicmania.presentation.service.MusicService
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
-class SongListBottomSheetFragment(private val songItemList: ArrayList<SongListDataModel>) : BottomSheetDialogFragment(), SongListAdapter.selectedSong {
+class SongListBottomSheetFragment(private val songList: ArrayList<SongListDataModel>) :
+    BottomSheetDialogFragment(), SongListAdapter.OnItemClickListener {
 
-    private lateinit var binding: FragmentSongListBottomSheetBinding
+    private var _binding: FragmentSongListBottomSheetBinding? = null
+    private val binding get() = _binding!!
     private lateinit var songListAdapter: SongListAdapter
-    private var parentActivity: SongsActivity? = null
-    private var selectedPosition = -1
+    private var songListListener: SongListListener? = null
+
+    interface SongListListener {
+        fun onSelectSongItem(position: Int)
+    }
 
     private val playbackReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -31,39 +36,31 @@ class SongListBottomSheetFragment(private val songItemList: ArrayList<SongListDa
                 val isPlaying = intent.getBooleanExtra("isPlaying", false)
                 val currentIndex = intent.getIntExtra("currentIndex", -1)
                 if (currentIndex != -1) {
-                    updatePlayPauseIcon(currentIndex, isPlaying)
+                    updatePlayingState(currentIndex, isPlaying)
                 }
             }
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentSongListBottomSheetBinding.inflate(inflater, container, false)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentSongListBottomSheetBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        init()
-        loadSongs()
-    }
-
-    override fun onResume() {
-        super.onResume()
+        setupRecyclerView()
+        songListListener = activity as? SongListListener
         registerReceiver()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        try {
-            context?.unregisterReceiver(playbackReceiver)
-        } catch (e: IllegalArgumentException) {
-            // Receiver not registered
-        }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        _binding = null
         try {
             context?.unregisterReceiver(playbackReceiver)
         } catch (e: IllegalArgumentException) {
@@ -71,50 +68,34 @@ class SongListBottomSheetFragment(private val songItemList: ArrayList<SongListDa
         }
     }
 
-    private fun init() {
-        parentActivity = activity as SongsActivity
+    private fun setupRecyclerView() {
+        songListAdapter = SongListAdapter(songList, this)
+        binding.recyclerView.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = songListAdapter
+        }
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerReceiver() {
-        val filter = IntentFilter(MusicService.BROADCAST_PLAYBACK_STATE)
+        val filter = IntentFilter().apply {
+            addAction(MusicService.BROADCAST_PLAYBACK_STATE)
+            addDataScheme("package")
+            addDataPath(requireContext().packageName, PatternMatcher.PATTERN_LITERAL)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context?.registerReceiver(playbackReceiver, filter, RECEIVER_NOT_EXPORTED)
+            context?.registerReceiver(playbackReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
             context?.registerReceiver(playbackReceiver, filter)
         }
     }
 
-    private fun setUpRecyclerView() {
-        songListAdapter = SongListAdapter(songItemList, this)
-        binding.recyclerView.adapter = songListAdapter
+    private fun updatePlayingState(index: Int, isPlaying: Boolean) {
+        songListAdapter.updatePlayingState(index, isPlaying)
     }
 
-    private fun loadSongs() {
-        setUpRecyclerView()
-    }
-
-    fun updatePlayPauseIcon(index: Int, isPlaying: Boolean) {
-        if (index != -1 && index < songItemList.size) {
-            songItemList.forEachIndexed { position, item ->
-                item.isPlaying = position == index && isPlaying
-            }
-            songListAdapter.notifyDataSetChanged()
-        }
-    }
-
-    override fun onSelectSongItem(position: Int) {
-        if (position < 0 || position >= songItemList.size) return
-        
-        selectedPosition = position
-        parentActivity?.currentSong?.apply {
-            title = songItemList[position].title
-            songThumbnail = songItemList[position].songThumbnail
-            subTitle = songItemList[position].subTitle
-            icon = songItemList[position].icon
-            artist = songItemList[position].artist
-        }
-        parentActivity?.currentSongIndex(position)
+    override fun onItemClick(position: Int) {
+        songListListener?.onSelectSongItem(position)
         dismiss()
     }
 }
