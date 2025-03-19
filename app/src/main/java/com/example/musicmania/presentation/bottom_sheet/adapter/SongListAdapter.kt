@@ -1,5 +1,7 @@
 package com.example.musicmania.presentation.bottom_sheet.adapter
 
+import android.annotation.SuppressLint
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -18,18 +20,25 @@ class SongListAdapter(
     inner class ViewHolder(private val binding: ItemSongsListBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        @SuppressLint("NotifyDataSetChanged")
         fun bind(song: SongListDataModel, position: Int) {
             binding.apply {
                 layoutItemSongList.tvTitle.text = song.title
                 layoutItemSongList.tvSubTitle.text = song.subTitle
                 
-                // Update play/pause icon based on current state
                 ivPlayAndPause.setImageResource(
                     when {
                         position == currentPlayingPosition && isCurrentlyPlaying -> R.drawable.ic_pause
                         else -> R.drawable.ic_play
                     }
                 )
+                ivPlayAndPause.setBackgroundColor(
+                    when{
+                        position == currentPlayingPosition && isCurrentlyPlaying -> R.color.pomegranate
+                        else -> R.color.black
+                    }
+                )
+
 
                 root.setOnClickListener {
                     onItemClick(position)

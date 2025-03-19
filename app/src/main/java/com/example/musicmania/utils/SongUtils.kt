@@ -24,6 +24,7 @@ object SongUtils {
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
 
+
             while (cursor.moveToNext()) {
                 val title = cursor.getString(titleColumn)
                 val artist = cursor.getString(artistColumn)

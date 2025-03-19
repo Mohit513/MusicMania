@@ -2,6 +2,7 @@ package com.example.musicmania.presentation.dashboard
 
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
+import android.app.StatusBarManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -18,8 +19,12 @@ import android.os.Looper
 import android.os.PatternMatcher
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowInsetsController
 import android.widget.TextView
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ServiceCompat.StopForegroundFlags
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import com.example.musicmania.R
@@ -96,6 +101,18 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
+        enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.apply {
+                hide(android.view.WindowInsets.Type.statusBars())
+                systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
+        }
+
         setContentView(binding.root)
         volumeText = binding.tvVolumePercentage
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -118,12 +135,11 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     private fun updatePlaybackState(isPlaying: Boolean) {
         this.isPlaying = isPlaying
         binding.apply {
-            // Update play/pause button
+
             ivSongPlay.setImageResource(
                 if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
             )
             
-            // Update thumbnail rotation
             if (isPlaying) {
                 startThumbnailRotation()
             } else {
@@ -203,7 +219,6 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         updateDeviceVolume()
         registerReceivers()
 
-        // Bind to music service
         Intent(this, MusicService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
@@ -211,7 +226,6 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         handler = Handler(Looper.getMainLooper())
         startProgressUpdates()
 
-        // Resume rotation if playing
         if (isPlaying) {
             startThumbnailRotation()
         }
@@ -226,8 +240,6 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             // Receiver not registered
             e.printStackTrace()
         }
-
-        // Clean up resources
         stopThumbnailRotation()
         handler.removeCallbacksAndMessages(null)
         if (isBound) {
@@ -290,7 +302,6 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
 
             layoutSongProgress.seekBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
                 override fun onStartTrackingTouch(slider: Slider) {
-                    // Pause updates while seeking
                     handler.removeCallbacksAndMessages(null)
                 }
 
@@ -357,8 +368,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         song?.let {
             binding.apply {
                 layoutSongName.tvTitle.text = it.title
-                layoutSongName.tvSubTitle.text = it.subTitle
-                // Update play/pause button based on current state
+                layoutSongName.tvSubTitle.text = it.artist
                 ivSongPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             }
         }
@@ -367,7 +377,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     private fun updateProgress(currentPosition: Int, duration: Int, callback: (Any) -> Unit) {
         if (duration > 0) {
             binding.layoutSongProgress.seekBar.apply {
-                if (!isPressed) {  // Only update if user is not currently seeking
+                if (!isPressed) {
                     valueFrom = 0f
                     valueTo = duration.toFloat()
                     value = currentPosition.toFloat()
@@ -437,8 +447,10 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
 
 
     private fun setUpStatusBar() {
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ViewCompat.getWindowInsetsController(window.decorView)?.isAppearanceLightStatusBars = true
+        window.decorView.top = getColor(R.color.pomegranate)
     }
 
     override fun onSelectSongItem(position: Int) {
@@ -448,5 +460,12 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         currentSong = songList[position]
         updatePlaybackState(true) // Set to playing state when new song selected
         initializeService()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        stopService(Intent(this,MusicService::class.java))
+        musicService?.onDestroy()
+        StopForegroundFlags()
     }
 }

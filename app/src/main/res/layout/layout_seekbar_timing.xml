@@ -31,9 +31,10 @@
         app:labelBehavior="gone"
         app:thumbColor="@color/pomegranate"
         app:thumbRadius="@dimen/_7sdp"
+        app:thumbElevation="@dimen/_6sdp"
         app:trackColorActive="@color/pomegranate"
         app:trackColorInactive="@color/dove_gray"
-        app:trackHeight="@dimen/_2sdp"
+        app:trackHeight="@dimen/_6sdp"
         app:layout_constraintStart_toEndOf="@id/tvCurrentTime"
         app:layout_constraintEnd_toStartOf="@id/tvTotalTime"
         app:layout_constraintTop_toTopOf="parent" />
