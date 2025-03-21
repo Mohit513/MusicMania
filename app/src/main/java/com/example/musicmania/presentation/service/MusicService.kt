@@ -28,6 +28,7 @@ class MusicService : Service() {
 
     private val binder = MusicBinder()
 
+    //moving
     companion object {
         const val CHANNEL_ID = "MusicServiceChannel"
         const val NOTIFICATION_ID = 1
@@ -37,7 +38,6 @@ class MusicService : Service() {
         const val ACTION_PREVIOUS = "MUSIC_PREVIOUS"
         const val ACTION_INIT_SERVICE = "INIT_SERVICE"
         const val ACTION_SEEK = "MUSIC_SEEK"
-
 
         const val BROADCAST_PLAYBACK_STATE = "com.example.musicmania.service.PLAYBACK_STATE"
         const val BROADCAST_PROGRESS = "com.example.musicmania.service.PROGRESS"
@@ -84,13 +84,17 @@ class MusicService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Music Service Channel",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Channel for Music Service"
                 setShowBadge(false)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
+            channel.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
+
+
         }
     }
 
@@ -123,16 +127,17 @@ class MusicService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_play)
-
             .setColor(getColor(R.color.white))
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(remoteViews)
             .setOngoing(true)
             .setAutoCancel(false)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setShowWhen(false)
+
     }
 
 //    private fun createNotification(): NotificationCompat.Builder {
@@ -322,10 +327,5 @@ class MusicService : Service() {
         mediaPlayer = null
         stopSelf()
         stopService(Intent(this,MusicService::class.java))
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopForeground(STOP_FOREGROUND_DETACH)
-        updateNotification()
-        createNotificationChannel()
-        createCustomNotification()
     }
 }

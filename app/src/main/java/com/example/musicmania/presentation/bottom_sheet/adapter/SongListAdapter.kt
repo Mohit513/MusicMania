@@ -1,15 +1,18 @@
 package com.example.musicmania.presentation.bottom_sheet.adapter
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.musicmania.R
 import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 
 class SongListAdapter(
+    private val context:Context,
     private val songList: ArrayList<SongListDataModel>,
     private val onItemClick: (Int) -> Unit
 ) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {
@@ -34,7 +37,7 @@ class SongListAdapter(
                 )
                 ivPlayAndPause.setBackgroundColor(
                     when{
-                        position == currentPlayingPosition && isCurrentlyPlaying -> R.color.pomegranate
+                        position == currentPlayingPosition && isCurrentlyPlaying -> ContextCompat.getColor(context,R.color.pomegranate)
                         else -> R.color.black
                     }
                 )

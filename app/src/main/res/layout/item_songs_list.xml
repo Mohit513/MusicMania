@@ -32,6 +32,7 @@
             android:layout_margin="@dimen/_4sdp"
             android:background="@color/woodsmoke"
             android:padding="2dp"
+            app:tint="@color/white"
             android:scaleType="center"
             android:tint="@color/rolling_stone"
             app:layout_constraintBottom_toBottomOf="parent"

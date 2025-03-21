@@ -13,7 +13,8 @@ object SongUtils {
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DURATION
+            MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.ALBUM_ID
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
@@ -23,6 +24,7 @@ object SongUtils {
             val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val pathColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val albumId = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
 
 
             while (cursor.moveToNext()) {
@@ -30,6 +32,7 @@ object SongUtils {
                 val artist = cursor.getString(artistColumn)
                 val path = cursor.getString(pathColumn)
                 val duration = cursor.getLong(durationColumn)
+                val album = cursor.getInt(albumId)
                 
                 val minutes = duration / 1000 / 60
                 val seconds = duration / 1000 % 60
@@ -40,7 +43,7 @@ object SongUtils {
                         title = title ?: "Unknown",
                         artist = artist ?: "Unknown Artist",
                         subTitle = path,
-                        songThumbnail = R.drawable.app_logo,
+                        songThumbnail =  R.drawable.app_logo,
                         icon = R.drawable.ic_play,
                         length = length,
                         isPlaying = false

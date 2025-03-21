@@ -2,26 +2,23 @@ package com.example.musicmania.presentation.dashboard
 
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
-import android.app.StatusBarManager
+import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.os.PatternMatcher
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsetsController
 import android.widget.TextView
-import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ServiceCompat.StopForegroundFlags
@@ -31,6 +28,7 @@ import com.example.musicmania.R
 import com.example.musicmania.databinding.ActivitySongsBinding
 import com.example.musicmania.presentation.bottom_sheet.SongListBottomSheetFragment
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
+import com.example.musicmania.presentation.lock_screen.LockScreenActivity
 import com.example.musicmania.presentation.service.MusicService
 import com.example.musicmania.utils.SongUtils
 import com.google.android.material.slider.Slider
@@ -49,6 +47,8 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
 
     private var musicService: MusicService? = null
     private var isBound = false
+
+    var isLockScreenActive = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -120,6 +120,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         setUpStatusBar()
         setUpListeners()
         setUpView()
+//        showLockScreenIfNeeded() //todo
 
         intent?.let { handleNotificationIntent(it) }
 
@@ -218,6 +219,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         super.onResume()
         updateDeviceVolume()
         registerReceivers()
+//        showLockScreenIfNeeded() //todo
 
         Intent(this, MusicService::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
@@ -241,6 +243,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             e.printStackTrace()
         }
         stopThumbnailRotation()
+//        hideLockScreenIfNeeded() //todo
         handler.removeCallbacksAndMessages(null)
         if (isBound) {
             unbindService(serviceConnection)
@@ -293,11 +296,11 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             }
 
             ivPlayForward.setOnClickListener {
-                sendServiceCommand(MusicService.ACTION_NEXT)
+                sendServiceCommand(MusicService.ACTION_PREVIOUS)
             }
 
             ivPlayback.setOnClickListener {
-                sendServiceCommand(MusicService.ACTION_PREVIOUS)
+                sendServiceCommand(MusicService.ACTION_NEXT)
             }
 
             layoutSongProgress.seekBar.addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
@@ -369,6 +372,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             binding.apply {
                 layoutSongName.tvTitle.text = it.title
                 layoutSongName.tvSubTitle.text = it.artist
+//                ivSongThumbnail.setImageResource(it.songThumbnail?: R.drawable.app_logo)
                 ivSongPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             }
         }
@@ -420,7 +424,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     private fun setDefaultSong() {
         currentSong.apply {
             title = "No Song Available"
-            subTitle = ""
+            subTitle = "No song here"
             songThumbnail = R.drawable.ic_play
             icon = R.drawable.ic_play
             artist = ""
@@ -444,6 +448,41 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
 //        binding.tvVolumePercentage. = volume
         binding.tvVolumePercentage.text = "${volume.toInt()}%"
     }
+
+//    private fun showLockScreenIfNeeded() {
+//        if (isPlaying && isKeyguardLocked()) {
+//            showLockScreen()
+//        }
+//    }
+//
+//    private fun hideLockScreenIfNeeded() {
+//        if (isLockScreenActive) {
+//            hideLockScreen()
+//        }
+//    }
+//
+//    private fun isKeyguardLocked(): Boolean {
+//        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+//        return keyguardManager.isKeyguardLocked
+//    }
+//
+//    private fun showLockScreen() {
+//        if (!isLockScreenActive) {
+//            val intent = Intent(this, LockScreenActivity::class.java)
+//            intent.putExtra("currentSongIndex", currentSongIndex)
+//            intent.putExtra("isPlaying", isPlaying)
+//            startActivity(intent)
+//            isLockScreenActive = true
+//        }
+//    }
+//
+//    private fun hideLockScreen() {
+//        if (isLockScreenActive) {
+//            isLockScreenActive = false
+//        }
+//    }
+
+
 
 
     private fun setUpStatusBar() {

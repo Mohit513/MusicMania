@@ -50,7 +50,7 @@ class SongListBottomSheetFragment(
     }
 
     private fun setupRecyclerView() {
-        songListAdapter = SongListAdapter(songList) { position ->
+        songListAdapter = SongListAdapter(context = requireContext(), songList = songList) { position ->
             songListListener?.onSelectSongItem(position)
             dismiss()
         }
@@ -60,7 +60,6 @@ class SongListBottomSheetFragment(
             adapter = songListAdapter
         }
 
-        // Update the current playing state
         songListAdapter.updatePlayingState(currentSongIndex, isPlaying)
     }
 

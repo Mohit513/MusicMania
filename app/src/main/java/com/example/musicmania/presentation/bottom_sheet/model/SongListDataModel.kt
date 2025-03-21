@@ -8,7 +8,7 @@ import com.example.musicmania.R
 data class SongListDataModel(
     var title: String? = "",
     var subTitle: String? = "",
-    var songThumbnail: Int? = R.drawable.ic_play,
+    var songThumbnail: Int? = null,
     var artist: String? = "",
     var length: String? = "",
     var icon: Int = R.drawable.ic_play,
