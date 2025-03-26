@@ -10,8 +10,8 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivMenu"
-        android:layout_width="@dimen/_44sdp"
-        android:layout_height="@dimen/_44sdp"
+        android:layout_width="@dimen/_48sdp"
+        android:layout_height="@dimen/_48sdp"
         android:layout_margin="@dimen/_20sdp"
         android:backgroundTint="@color/shark"
         android:background="@drawable/white_shadow_background"
@@ -24,7 +24,7 @@
         app:layout_constraintTop_toTopOf="@id/tvVolumePercentage"
         app:layout_constraintBottom_toBottomOf="@id/tvVolumePercentage"
         app:shapeAppearance="@style/circle_image_view"
-        app:srcCompat="@drawable/ic_left"
+        app:srcCompat="@drawable/ic_menu"
         app:strokeColor="@color/mako_5"
         app:strokeWidth="@dimen/_1sdp" />
 
@@ -56,15 +56,19 @@
 
     <TextView
         android:id="@+id/tvVolumePercentage"
-        android:layout_width="@dimen/_42sdp"
-        android:layout_height="@dimen/_42sdp"
+        android:layout_width="@dimen/_46sdp"
+        android:layout_height="@dimen/_46sdp"
         android:layout_marginHorizontal="@dimen/_20sdp"
         android:layout_marginTop="@dimen/_24sdp"
         android:padding="@dimen/_2sdp"
         android:background="@drawable/rounded_circular_view"
         android:elevation="@dimen/_4sdp"
         android:gravity="center"
+        android:drawablePadding="@dimen/_2sdp"
+        android:paddingHorizontal="@dimen/_2sdp"
         android:textColor="@color/rolling_stone"
+        app:drawableLeftCompat="@drawable/ic_volume"
+        app:drawableTint="@color/rolling_stone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -106,7 +110,7 @@
         android:layout_marginVertical="@dimen/_14sdp"
         android:background="@color/pomegranate"
         android:padding="@dimen/_2sdp"
-        android:elevation="@dimen/_24sdp"
+        android:elevation="@dimen/_4sdp"
         android:scaleType="center"
         android:tint="@color/white"
         app:layout_constraintBottom_toTopOf="@id/tvOpenSongList"
@@ -123,7 +127,7 @@
         android:layout_height="@dimen/_68sdp"
         android:layout_margin="@dimen/_16sdp"
         android:background="@color/pomegranate"
-        android:elevation="@dimen/_24sdp"
+        android:elevation="@dimen/_4sdp"
         android:backgroundTint="@color/woodsmoke"
         android:padding="@dimen/_2sdp"
         android:scaleType="center"

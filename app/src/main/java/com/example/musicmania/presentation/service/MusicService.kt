@@ -15,6 +15,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
+import com.example.musicmania.Constant
 import com.example.musicmania.R
 import com.example.musicmania.presentation.dashboard.SongsActivity
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
@@ -28,21 +29,6 @@ class MusicService : Service() {
 
     private val binder = MusicBinder()
 
-    //moving
-    companion object {
-        const val CHANNEL_ID = "MusicServiceChannel"
-        const val NOTIFICATION_ID = 2
-
-        const val ACTION_PLAY_PAUSE = "MUSIC_PLAY_PAUSE"
-        const val ACTION_NEXT = "MUSIC_NEXT"
-        const val ACTION_PREVIOUS = "MUSIC_PREVIOUS"
-        const val ACTION_INIT_SERVICE = "INIT_SERVICE"
-        const val ACTION_SEEK = "MUSIC_SEEK"
-
-        const val BROADCAST_PLAYBACK_STATE = "com.example.musicmania.service.PLAYBACK_STATE"
-        const val BROADCAST_PROGRESS = "com.example.musicmania.service.PROGRESS"
-    }
-
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -54,14 +40,14 @@ class MusicService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY_PAUSE -> togglePlayPause()
-            ACTION_NEXT -> playNextSong()
-            ACTION_PREVIOUS -> playPreviousSong()
-            ACTION_SEEK -> {
+            Constant.ACTION_PLAY_PAUSE -> togglePlayPause()
+            Constant.ACTION_NEXT -> playNextSong()
+            Constant.ACTION_PREVIOUS -> playPreviousSong()
+            Constant.ACTION_SEEK -> {
                 val seekPosition = intent.getIntExtra("seekPosition", 0)
                 seekTo(seekPosition)
             }
-            ACTION_INIT_SERVICE -> {
+            Constant.ACTION_INIT_SERVICE -> {
                 @Suppress("UNCHECKED_CAST")
                 songList = intent.getParcelableArrayListExtra("songList") ?: ArrayList()
                 currentSongIndex = intent.getIntExtra("currentIndex", 0)
@@ -82,7 +68,7 @@ class MusicService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
+                Constant.CHANNEL_ID,
                 "Music Service Channel",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
@@ -117,15 +103,15 @@ class MusicService : Service() {
         remoteViews.setImageViewResource(R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play)
         remoteViews.setImageViewResource(R.id.notification_play_pause, if (mediaPlayer?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play)
 
-        remoteViews.setOnClickPendingIntent(R.id.notification_play_pause, createActionPendingIntent(ACTION_PLAY_PAUSE))
-        remoteViews.setOnClickPendingIntent(R.id.notification_previous, createActionPendingIntent(ACTION_PREVIOUS))
-        remoteViews.setOnClickPendingIntent(R.id.notification_next, createActionPendingIntent(ACTION_NEXT))
+        remoteViews.setOnClickPendingIntent(R.id.notification_play_pause, createActionPendingIntent(Constant.ACTION_PLAY_PAUSE))
+        remoteViews.setOnClickPendingIntent(R.id.notification_previous, createActionPendingIntent(Constant.ACTION_PREVIOUS))
+        remoteViews.setOnClickPendingIntent(R.id.notification_next, createActionPendingIntent(Constant.ACTION_NEXT))
         mediaPlayer?.let {
             remoteViews.setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
         }
 
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        return NotificationCompat.Builder(this, Constant.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_play)
             .setColor(getColor(R.color.white))
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
@@ -147,9 +133,9 @@ class MusicService : Service() {
         }
         return PendingIntent.getService(
             this, when(action) {
-                ACTION_PLAY_PAUSE -> 0
-                ACTION_NEXT -> 1
-                ACTION_PREVIOUS -> 2
+                Constant.ACTION_PLAY_PAUSE -> 0
+                Constant.ACTION_NEXT -> 1
+                Constant.ACTION_PREVIOUS -> 2
                 else -> 3
             }, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -233,7 +219,7 @@ class MusicService : Service() {
 
     private fun broadcastPlaybackState() {
         Intent().apply {
-            action = BROADCAST_PLAYBACK_STATE
+            action = Constant.BROADCAST_PLAYBACK_STATE
             `package` = packageName
             flags = Intent.FLAG_RECEIVER_REGISTERED_ONLY
             putExtra("isPlaying", mediaPlayer?.isPlaying ?: false)
@@ -251,7 +237,7 @@ class MusicService : Service() {
 
     private fun broadcastProgress(currentPosition: Int, duration: Int) {
         Intent().apply {
-            action = BROADCAST_PROGRESS
+            action = Constant.BROADCAST_PROGRESS
             `package` = packageName
             flags = Intent.FLAG_RECEIVER_REGISTERED_ONLY
             putExtra("currentPosition", currentPosition)
@@ -267,7 +253,7 @@ class MusicService : Service() {
     }
 
     private fun updateNotification() {
-        startForeground(NOTIFICATION_ID, createCustomNotification().build())
+        startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
     }
 
     override fun stopService(name: Intent?): Boolean {

@@ -1,20 +1,33 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/shark"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:background="@color/shark">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvHeader"
+        style="@style/outfit_medium_xx_large"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/_18sdp"
+        android:paddingVertical="@dimen/_4sdp"
+        android:text="@string/all_songs"
+        android:textAlignment="center"
+        android:textColor="@color/dove_gray"
+        android:textSize="@dimen/_20ssp"
+        app:fontFamily="@font/cinzel_semibold"
+        app:layout_constraintTop_toTopOf="parent" />
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutSearchBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/_10sdp"
         android:paddingHorizontal="@dimen/_8sdp"
         android:paddingVertical="@dimen/_10sdp"
-        android:layout_marginTop="@dimen/_24sdp"
-        android:layout_marginHorizontal="@dimen/_10sdp"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/tvHeader">
 
         <androidx.appcompat.widget.AppCompatEditText
             android:id="@+id/etSearch"
@@ -22,42 +35,40 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_stroke"
             android:drawableStart="@drawable/ic_search"
-            android:drawablePadding="@dimen/_8sdp"
+            android:drawablePadding="@dimen/_12sdp"
             android:ellipsize="end"
-            android:hint="search your song"
+            android:hint="@string/search_your_song_in_list"
             android:imeOptions="actionSearch"
-            android:paddingHorizontal="@dimen/_4sdp"
-            android:paddingVertical="@dimen/_6sdp"
+            android:maxLength="30"
+            android:padding="@dimen/_8sdp"
             android:singleLine="true"
-            android:maxLength="20"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/ivClose"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivClose"
             android:layout_width="@dimen/_20sdp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/_4sdp"
-            android:visibility="gone"
             android:src="@drawable/ic_close_new"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@id/etSearch"
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        tools:itemCount="10"
         android:layout_margin="@dimen/_8sdp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        tools:listitem="@layout/item_songs_list"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layoutSearchBox"
-        />
-
+        tools:itemCount="10"
+        tools:listitem="@layout/item_songs_list" />
 </androidx.constraintlayout.widget.ConstraintLayout>

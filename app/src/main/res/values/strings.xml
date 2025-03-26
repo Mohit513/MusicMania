@@ -3,4 +3,6 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="tap_to_open_the_song_list">Tap to open the song list</string>
+    <string name="search_your_song_in_list">Search your song in list</string>
+    <string name="all_songs">All songs</string>
 </resources>

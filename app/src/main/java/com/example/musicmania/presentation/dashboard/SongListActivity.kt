@@ -10,6 +10,9 @@ import android.content.ServiceConnection
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +25,7 @@ import com.example.musicmania.presentation.service.MusicService
 class SongListActivity : AppCompatActivity() {
 
     private var songList: ArrayList<SongListDataModel> = arrayListOf()
+    private var commonSearchList: ArrayList<SongListDataModel> = arrayListOf() // This list is for search results
     private var currentSongIndex: Int = 0
     private var isPlaying: Boolean = true
     private lateinit var binding: ActivitySongListBinding
@@ -42,9 +46,10 @@ class SongListActivity : AppCompatActivity() {
             isBound = false
         }
     }
+
     private val playbackStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == MusicService.BROADCAST_PLAYBACK_STATE) {
+            if (intent.action == Constant.BROADCAST_PLAYBACK_STATE) {
                 val isPlaying = intent.getBooleanExtra("isPlaying", false)
                 val currentIndex = intent.getIntExtra("currentIndex", 0)
 
@@ -62,15 +67,17 @@ class SongListActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         songList = intent.getParcelableArrayListExtra("songList") ?: arrayListOf()
+        commonSearchList.addAll(songList)
         currentSongIndex = intent.getIntExtra("currentSongIndex", 0)
         isPlaying = intent.getBooleanExtra("isPlaying", true)
 
         setUpRecyclerView()
         bindMusicService()
+        setupSearchListener()
     }
 
     private fun setUpRecyclerView() {
-        songListAdapter = SongListAdapter(applicationContext, songList) { position ->
+        songListAdapter = SongListAdapter(applicationContext, commonSearchList) { position ->
             onSongItemClicked(position)
         }
         binding.recyclerView.apply {
@@ -93,8 +100,10 @@ class SongListActivity : AppCompatActivity() {
     }
 
     private fun onSongItemClicked(position: Int) {
+        val clickedSong = commonSearchList[position]
+        val songIndexInOriginalList = songList.indexOf(clickedSong)
+        currentSongIndex = songIndexInOriginalList
         if (isBound && musicService != null) {
-            currentSongIndex = position
             val intent = Intent(this, MusicService::class.java).apply {
                 action = Constant.ACTION_INIT_SERVICE
                 putParcelableArrayListExtra("songList", songList)
@@ -108,6 +117,7 @@ class SongListActivity : AppCompatActivity() {
         }
     }
 
+
     private fun updateAdapterPlayingState() {
         if (isBound && musicService != null) {
             musicService?.mediaPlayer?.let {
@@ -119,22 +129,65 @@ class SongListActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-        override fun onStart() {
-            super.onStart()
-            val filter = IntentFilter(MusicService.BROADCAST_PLAYBACK_STATE)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(playbackStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                registerReceiver(playbackStateReceiver, filter)
+    private fun setupSearchListener() {
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                val searchText = s.toString()
+                filterSearchList(searchText)
             }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun filterSearchList(searchText: String) {
+        commonSearchList.clear()
+
+        if (searchText.isNotEmpty()) {
+            binding.ivClose.visibility = View.VISIBLE
+            binding.ivClose.setOnClickListener {
+                clearSearch()
+            }
+            val filteredList = songList.filter { song ->
+                song.title?.lowercase()?.contains(searchText.lowercase()) == true ||
+                        song.artist?.lowercase()?.contains(searchText.lowercase()) == true
+            }
+            commonSearchList.addAll(filteredList)
+        } else {
+            binding.ivClose.visibility = View.GONE
+            commonSearchList.addAll(songList)
+        }
+//        showNoDataLayout(commonSearchList.isEmpty())
+        songListAdapter.notifyDataSetChanged()
+    }
+
+    private fun clearSearch() {
+        binding.etSearch.text?.clear()
+        filterSearchList("") // Reset the search and display the full list
+    }
+
+//    private fun showNoDataLayout(isEmpty: Boolean) {
+//        binding.noDataLayout.visibility = if (isEmpty) View.VISIBLE else View.GONE
+//    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter(Constant.BROADCAST_PLAYBACK_STATE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(playbackStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(playbackStateReceiver, filter)
+        }
     }
 
     override fun onStop() {
         super.onStop()
         unregisterReceiver(playbackStateReceiver)
     }
-
 
     override fun onDestroy() {
         super.onDestroy()

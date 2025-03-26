@@ -12,8 +12,8 @@
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:maxLines="1"
-        android:paddingVertical="@dimen/_2sdp"
         android:paddingHorizontal="@dimen/_4sdp"
+        android:paddingVertical="@dimen/_2sdp"
         android:textAlignment="textStart"
         android:textColor="@color/dusty_gray"
         app:fontFamily="@font/cinzel_semibold"
@@ -29,13 +29,13 @@
         android:layout_height="wrap_content"
         android:ellipsize="marquee"
         android:maxLines="1"
-        android:textStyle="bold"
         android:paddingHorizontal="@dimen/_4sdp"
-        tools:text="Eminem/ Rihanna"
         android:textAlignment="textStart"
         android:textColor="@color/dove_gray"
+        android:textStyle="bold"
         app:fontFamily="@font/cinzel"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle" />
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        tools:text="Eminem/ Rihanna" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

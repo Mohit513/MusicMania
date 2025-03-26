@@ -6,6 +6,8 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"
+        tools:ignore="SelectedPhotoAccess" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
@@ -33,17 +35,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".presentation.dashboard.SongListActivity"
-            android:exported="false"/>
         <activity
             android:name=".MainActivity"
             android:exported="true">
+        </activity>
+        <activity
+            android:name=".presentation.dashboard.SongListActivity"
+            android:exported="false">
         </activity>
 
         <service android:name=".presentation.service.MusicService"
             android:exported="false"
             android:enabled="true"
             android:foregroundServiceType="mediaPlayback"/>
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
     </application>
 
 </manifest>
