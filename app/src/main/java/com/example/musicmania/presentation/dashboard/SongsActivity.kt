@@ -2,7 +2,6 @@ package com.example.musicmania.presentation.dashboard
 
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
-import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -28,7 +27,6 @@ import com.example.musicmania.R
 import com.example.musicmania.databinding.ActivitySongsBinding
 import com.example.musicmania.presentation.bottom_sheet.SongListBottomSheetFragment
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
-import com.example.musicmania.presentation.lock_screen.LockScreenActivity
 import com.example.musicmania.presentation.service.MusicService
 import com.example.musicmania.utils.SongUtils
 import com.google.android.material.slider.Slider
@@ -71,13 +69,13 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
                     val currentIndex = intent.getIntExtra("currentIndex", -1)
                     val duration = intent.getIntExtra("duration", 0)
                     val currentPosition = intent.getIntExtra("currentPosition", 0)
-                    
+
                     if (currentIndex != -1 && currentIndex < songList.size) {
                         currentSongIndex = currentIndex
                         currentSong = songList[currentIndex]
                         updateSongInfo(currentSong)
                     }
-                    
+
                     updatePlaybackState(isPlaying)
                     updateProgress(currentPosition, duration) {}
                 }
@@ -256,7 +254,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         try {
             // System broadcast for audio becoming noisy
             val volumeFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-            
+
             // App-specific broadcasts for music playback
             val playbackFilter = IntentFilter().apply {
                 addAction(MusicService.BROADCAST_PLAYBACK_STATE)
@@ -287,6 +285,13 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
 
     private fun setUpListeners() {
         binding.apply {
+            ivMenu.setOnClickListener {
+                val intent = Intent(applicationContext,SongListActivity::class.java)
+                intent.putParcelableArrayListExtra("songList", songList)
+                intent.putExtra("currentSongIndex", currentSongIndex)
+                intent.putExtra("isPlaying", isPlaying)
+                startActivity(intent)
+            }
             tvOpenSongList.setOnClickListener {
                 showSongListBottomSheet()
             }
@@ -311,7 +316,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
                 override fun onStopTrackingTouch(slider: Slider) {
                     val position = slider.value.toInt()
                     sendServiceCommand(MusicService.ACTION_SEEK, position)
-                    // Resume updates after seeking
+
                     startProgressUpdates()
                 }
             })
@@ -372,7 +377,8 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             binding.apply {
                 layoutSongName.tvTitle.text = it.title
                 layoutSongName.tvSubTitle.text = it.artist
-//                ivSongThumbnail.setImageResource(it.songThumbnail?: R.drawable.app_logo)
+                layoutSongName.tvSubTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                ivSongThumbnail.setImageResource(it.songThumbnail?: R.drawable.app_logo)
                 ivSongPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             }
         }
@@ -445,46 +451,8 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         val volume = (currentVolume.toFloat() / maxVolume.toFloat()) * 100
-//        binding.tvVolumePercentage. = volume
         binding.tvVolumePercentage.text = "${volume.toInt()}%"
     }
-
-//    private fun showLockScreenIfNeeded() {
-//        if (isPlaying && isKeyguardLocked()) {
-//            showLockScreen()
-//        }
-//    }
-//
-//    private fun hideLockScreenIfNeeded() {
-//        if (isLockScreenActive) {
-//            hideLockScreen()
-//        }
-//    }
-//
-//    private fun isKeyguardLocked(): Boolean {
-//        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-//        return keyguardManager.isKeyguardLocked
-//    }
-//
-//    private fun showLockScreen() {
-//        if (!isLockScreenActive) {
-//            val intent = Intent(this, LockScreenActivity::class.java)
-//            intent.putExtra("currentSongIndex", currentSongIndex)
-//            intent.putExtra("isPlaying", isPlaying)
-//            startActivity(intent)
-//            isLockScreenActive = true
-//        }
-//    }
-//
-//    private fun hideLockScreen() {
-//        if (isLockScreenActive) {
-//            isLockScreenActive = false
-//        }
-//    }
-
-
-
-
     private fun setUpStatusBar() {
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -497,7 +465,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         
         currentSongIndex = position
         currentSong = songList[position]
-        updatePlaybackState(true) // Set to playing state when new song selected
+        updatePlaybackState(true)
         initializeService()
     }
 

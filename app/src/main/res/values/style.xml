@@ -180,6 +180,8 @@
     <style name="circle_image_view">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+        <item name="android:elevation">@dimen/_4sdp</item>
+        <item name="background">@drawable/white_shadow_background</item>
     </style>
 
     <style name="rounded_corner_10">
@@ -235,6 +237,7 @@
     <style name="CustomBottomSheet" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:layout_margin">@dimen/_16sdp</item>
         <item name="background">@android:color/transparent</item>
+        <item name="cornerRadius">@dimen/_12sdp</item>
     </style>
 
 </resources>

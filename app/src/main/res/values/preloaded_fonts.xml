@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="preloaded_fonts" translatable="false">
+        <item>@font/aboreto</item>
+        <item>@font/bebas_neue</item>
+        <item>@font/bungee_spice</item>
+        <item>@font/cinzel</item>
+        <item>@font/cinzel_semibold</item>
+        <item>@font/notable</item>
+    </array>
+</resources>

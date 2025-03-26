@@ -33,6 +33,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".presentation.dashboard.SongListActivity"
+            android:exported="false"/>
         <activity
             android:name=".MainActivity"
             android:exported="true">

@@ -31,7 +31,7 @@ class MusicService : Service() {
     //moving
     companion object {
         const val CHANNEL_ID = "MusicServiceChannel"
-        const val NOTIFICATION_ID = 1
+        const val NOTIFICATION_ID = 2
 
         const val ACTION_PLAY_PAUSE = "MUSIC_PLAY_PAUSE"
         const val ACTION_NEXT = "MUSIC_NEXT"
@@ -140,53 +140,6 @@ class MusicService : Service() {
 
     }
 
-//    private fun createNotification(): NotificationCompat.Builder {
-//        val intent = Intent(this, SongsActivity::class.java).apply {
-//            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-//            putExtra("currentSongIndex", currentSongIndex)
-//            putExtra("isPlaying", mediaPlayer?.isPlaying ?: false)
-//        }
-//
-//        val pendingIntent = PendingIntent.getActivity(
-//            this, 0, intent,
-//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-//        )
-//
-//        val playPauseIcon = if (mediaPlayer?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play
-//        val playPauseAction = NotificationCompat.Action.Builder(
-//            playPauseIcon,
-//            "Play/Pause",
-//            createActionPendingIntent(ACTION_PLAY_PAUSE)
-//        ).build()
-//
-//        val previousAction = NotificationCompat.Action.Builder(
-//            R.drawable.ic_backward,
-//            "Previous",
-//            createActionPendingIntent(ACTION_PREVIOUS)
-//        ).build()
-//
-//        val nextAction = NotificationCompat.Action.Builder(
-//            R.drawable.ic_forward,
-//            "Next",
-//            createActionPendingIntent(ACTION_NEXT)
-//        ).build()
-//
-//
-//        return NotificationCompat.Builder(this, CHANNEL_ID)
-//            .setContentTitle(currentSong?.title ?: "Unknown")
-//            .setContentText(currentSong?.artist ?: "Unknown Artist")
-//            .setSmallIcon(currentSong?.songThumbnail ?: R.drawable.ic_play)
-//            .setOngoing(true)
-//            .setAutoCancel(false)
-//            .setContentIntent(pendingIntent)
-//            .setPriority(NotificationCompat.PRIORITY_LOW)
-//            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-//            .addAction(previousAction)
-//            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-//            .addAction(playPauseAction)
-//            .addAction(nextAction)
-//            .setShowWhen(false)
-//    }
 
     private fun createActionPendingIntent(action: String): PendingIntent {
         val intent = Intent(this, MusicService::class.java).apply {
@@ -224,6 +177,7 @@ class MusicService : Service() {
             }
         }
         updateNotification()
+        broadcastPlaybackState()
     }
 
     private fun togglePlayPause() {
@@ -240,12 +194,14 @@ class MusicService : Service() {
     private fun playNextSong() {
         currentSongIndex = (currentSongIndex + 1) % songList.size
         playSong(songList[currentSongIndex])
+        broadcastPlaybackState()
 
     }
 
     private fun playPreviousSong() {
         currentSongIndex = if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
         playSong(songList[currentSongIndex])
+        broadcastPlaybackState()
     }
 
     private fun seekTo(position: Int) {

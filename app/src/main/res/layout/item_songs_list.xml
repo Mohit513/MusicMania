@@ -3,12 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardBackgroundColor="@color/color_primary"
-    app:cardCornerRadius="@dimen/_8sdp"
-    android:layout_margin="@dimen/_2sdp"
-    app:strokeColor="@color/dove_gray"
-    app:strokeWidth="@dimen/_3sdp"
-    app:cardElevation="@dimen/_6sdp">
+    app:cardBackgroundColor="@color/shark"
+    app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -21,8 +17,8 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/_6sdp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/ivPlayAndPause"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.imageview.ShapeableImageView
@@ -30,18 +26,17 @@
             android:layout_width="@dimen/_40sdp"
             android:layout_height="@dimen/_40sdp"
             android:layout_margin="@dimen/_4sdp"
-            android:background="@color/woodsmoke"
             android:padding="2dp"
-            app:tint="@color/white"
             android:scaleType="center"
+            android:elevation="@dimen/_4sdp"
             android:tint="@color/rolling_stone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearance="@style/circle_image_view"
             app:srcCompat="@drawable/ic_play"
-            app:strokeColor="@color/mako"
-            app:strokeWidth="@dimen/_2sdp" />
+            app:strokeWidth="@dimen/_1sdp"
+            app:tint="@color/white" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
