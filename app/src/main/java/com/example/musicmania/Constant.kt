@@ -3,7 +3,7 @@ package com.example.musicmania
 class Constant {
     companion object {
         const val CHANNEL_ID = "MusicServiceChannel"
-        const val NOTIFICATION_ID = 1
+        const val NOTIFICATION_ID = 2
 
         const val ACTION_PLAY_PAUSE = "MUSIC_PLAY_PAUSE"
         const val ACTION_NEXT = "MUSIC_NEXT"

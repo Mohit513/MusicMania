@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.widget.RemoteViews
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.example.musicmania.Constant
 import com.example.musicmania.R
@@ -32,12 +33,14 @@ class MusicService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
     }
 
     fun pauseSong() {
         mediaPlayer?.pause()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             Constant.ACTION_PLAY_PAUSE -> togglePlayPause()
@@ -54,6 +57,10 @@ class MusicService : Service() {
                 initializeService()
             }
         }
+
+        // Start the service in the foreground
+        startForegroundService(Intent(this, MusicService::class.java))
+
         return START_NOT_STICKY
     }
 
@@ -253,8 +260,16 @@ class MusicService : Service() {
     }
 
     private fun updateNotification() {
-        startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+        // We don't need to call startForeground again, as we're already running in the foreground.
+        // Just update the existing notification with the latest progress.
+        mediaPlayer?.let { player ->
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            val updatedNotification = createCustomNotification()
+            updatedNotification.setProgress(player.duration, player.currentPosition, false)
+            notificationManager?.notify(Constant.NOTIFICATION_ID, updatedNotification.build())
+        }
     }
+
 
     override fun stopService(name: Intent?): Boolean {
         stopForeground(STOP_FOREGROUND_REMOVE)

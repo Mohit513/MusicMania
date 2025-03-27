@@ -41,7 +41,7 @@ object PermissionUtils {
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         } else {
-            true // No need for notification permission on versions below Android 13
+            true
         }
     }
 

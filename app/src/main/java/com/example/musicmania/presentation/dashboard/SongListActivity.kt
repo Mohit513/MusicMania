@@ -14,18 +14,18 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.musicmania.Constant
+import com.example.musicmania.base.BaseActivity
 import com.example.musicmania.databinding.ActivitySongListBinding
 import com.example.musicmania.presentation.bottom_sheet.adapter.SongListAdapter
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 import com.example.musicmania.presentation.service.MusicService
 
-class SongListActivity : AppCompatActivity() {
+class SongListActivity : BaseActivity() {
 
     private var songList: ArrayList<SongListDataModel> = arrayListOf()
-    private var commonSearchList: ArrayList<SongListDataModel> = arrayListOf() // This list is for search results
+    private var commonSearchList: ArrayList<SongListDataModel> = arrayListOf()
     private var currentSongIndex: Int = 0
     private var isPlaying: Boolean = true
     private lateinit var binding: ActivitySongListBinding
@@ -166,7 +166,7 @@ class SongListActivity : AppCompatActivity() {
 
     private fun clearSearch() {
         binding.etSearch.text?.clear()
-        filterSearchList("") // Reset the search and display the full list
+        filterSearchList("")
     }
 
 //    private fun showNoDataLayout(isEmpty: Boolean) {

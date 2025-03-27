@@ -21,12 +21,12 @@ import android.view.WindowInsetsController
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ServiceCompat.StopForegroundFlags
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import com.example.musicmania.Constant
 import com.example.musicmania.R
+import com.example.musicmania.base.BaseActivity
 import com.example.musicmania.databinding.ActivitySongsBinding
 import com.example.musicmania.presentation.bottom_sheet.SongListBottomSheetFragment
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
@@ -35,7 +35,7 @@ import com.example.musicmania.utils.PermissionUtils
 import com.example.musicmania.utils.SongUtils
 import com.google.android.material.slider.Slider
 
-class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListListener {
+class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListener {
     private lateinit var binding: ActivitySongsBinding
     private lateinit var volumeText: TextView
     private lateinit var audioManager: AudioManager
@@ -115,10 +115,8 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
                     or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
         }
-        // Request permissions if not granted
-        if (!PermissionUtils.checkAllPermissions(this)) {
-            PermissionUtils.requestAllPermissions(this)
-        }
+
+        checkAndRequestPermissions()
 
         setContentView(binding.root)
         volumeText = binding.tvVolumePercentage
@@ -133,6 +131,30 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
 
     }
 
+    private fun refreshUI() {
+        // After updating the song list, you can ensure UI elements are updated
+        if (songList.isNotEmpty()) {
+            currentSong = songList[currentSongIndex]
+            updateSongInfo(currentSong)  // Update UI to reflect the new song info
+        }
+        // Any other UI-related updates can go here
+        binding.apply {
+            // If any of the UI elements are changed or need to reflect the new song data
+            ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.app_logo)
+            layoutSongName.tvTitle.text = currentSong.title
+            layoutSongName.tvSubTitle.text = currentSong.artist
+        }
+    }
+
+
+    private fun checkAndRequestPermissions() {
+        if (!PermissionUtils.checkAllPermissions(this)) {
+            PermissionUtils.requestAllPermissions(this)
+        } else {
+            setUpView()
+        }
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -143,9 +165,13 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
         when (requestCode) {
             PermissionUtils.ALL_PERMISSIONS_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                    setDefaultSong()
+                     initializeService()
+                     setUpView()
+//                    refreshUI()
                 } else {
                     Toast.makeText(this, "App requires all permission", Toast.LENGTH_SHORT).show()
+                    setDefaultSong()
+                    setUpView()
                 }
             }
         }
@@ -164,7 +190,6 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
             ivSongPlay.setImageResource(
                 if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
             )
-
             if (isPlaying) {
                 startThumbnailRotation()
             } else {
@@ -320,16 +345,29 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
                 showSongListBottomSheet()
             }
 
+
             ivSongPlay.setOnClickListener {
-                sendServiceCommand(Constant.ACTION_PLAY_PAUSE)
+                if (songList.isNotEmpty()) {
+                    sendServiceCommand(Constant.ACTION_PLAY_PAUSE)
+                } else {
+                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT).show()
+                }
             }
 
             ivPlayForward.setOnClickListener {
-                sendServiceCommand(Constant.ACTION_PREVIOUS)
+                if (songList.isNotEmpty()) {
+                    sendServiceCommand(Constant.ACTION_PREVIOUS)
+                } else {
+                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT).show()
+                }
             }
 
             ivPlayback.setOnClickListener {
-                sendServiceCommand(Constant.ACTION_NEXT)
+                if (songList.isNotEmpty()) {
+                    sendServiceCommand(Constant.ACTION_NEXT)
+                } else {
+                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT).show()
+                }
             }
 
             layoutSongProgress.seekBar.addOnSliderTouchListener(object :
@@ -387,6 +425,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
     }
 
     private fun setUpView() {
+        songList.clear()
         songList.addAll(SongUtils.getSongsFromDevice(contentResolver))
         if (songList.isNotEmpty()) {
             currentSong = songList[currentSongIndex]
@@ -403,6 +442,7 @@ class SongsActivity : AppCompatActivity(), SongListBottomSheetFragment.SongListL
                 layoutSongName.tvTitle.text = it.title
                 layoutSongName.tvSubTitle.text = it.artist
                 layoutSongName.tvSubTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                layoutSongName.tvTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
                 ivSongThumbnail.setImageResource(it.songThumbnail ?: R.drawable.app_logo)
                 ivSongPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             }
