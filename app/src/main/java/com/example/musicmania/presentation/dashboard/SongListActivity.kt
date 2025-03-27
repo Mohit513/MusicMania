@@ -160,7 +160,6 @@ class SongListActivity : BaseActivity() {
             binding.ivClose.visibility = View.GONE
             commonSearchList.addAll(songList)
         }
-//        showNoDataLayout(commonSearchList.isEmpty())
         songListAdapter.notifyDataSetChanged()
     }
 

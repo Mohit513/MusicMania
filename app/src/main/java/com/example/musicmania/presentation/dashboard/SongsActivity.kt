@@ -75,8 +75,13 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                     val currentPosition = intent.getIntExtra("currentPosition", 0)
 
                     if (currentIndex != -1 && currentIndex < songList.size) {
+                        // Reset isPlaying for all songs
+                        songList.forEach { it.isPlaying = false }
+
                         currentSongIndex = currentIndex
                         currentSong = songList[currentIndex]
+                        // Set isPlaying only for current song
+                        currentSong.isPlaying = isPlaying
                         updateSongInfo(currentSong)
                     }
 
@@ -125,7 +130,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         setUpStatusBar()
         setUpListeners()
         setUpView()
-//        showLockScreenIfNeeded() //todo
+        // showLockScreenIfNeeded() //todo
 
         intent?.let { handleNotificationIntent(it) }
 
@@ -134,18 +139,21 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     private fun refreshUI() {
         // After updating the song list, you can ensure UI elements are updated
         if (songList.isNotEmpty()) {
+            // Reset isPlaying for all songs
+            songList.forEach { it.isPlaying = false }
+
             currentSong = songList[currentSongIndex]
-            updateSongInfo(currentSong)  // Update UI to reflect the new song info
+            // Set isPlaying for current song
+            currentSong.isPlaying = isPlaying
+            updateSongInfo(currentSong)
         }
-        // Any other UI-related updates can go here
+
         binding.apply {
-            // If any of the UI elements are changed or need to reflect the new song data
             ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.app_logo)
             layoutSongName.tvTitle.text = currentSong.title
             layoutSongName.tvSubTitle.text = currentSong.artist
         }
     }
-
 
     private fun checkAndRequestPermissions() {
         if (!PermissionUtils.checkAllPermissions(this)) {
@@ -165,8 +173,8 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         when (requestCode) {
             PermissionUtils.ALL_PERMISSIONS_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                     initializeService()
-                     setUpView()
+                    initializeService()
+                    setUpView()
 //                    refreshUI()
                 } else {
                     Toast.makeText(this, "App requires all permission", Toast.LENGTH_SHORT).show()
@@ -176,7 +184,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             }
         }
     }
-
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -270,7 +277,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         super.onResume()
         updateDeviceVolume()
         registerReceivers()
-//        showLockScreenIfNeeded() //todo
+        // showLockScreenIfNeeded() //todo
 
         Intent(this, Constant::class.java).also { intent ->
             bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
@@ -293,7 +300,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             e.printStackTrace()
         }
         stopThumbnailRotation()
-//        hideLockScreenIfNeeded() //todo
+        // hideLockScreenIfNeeded() //todo
         handler.removeCallbacksAndMessages(null)
         if (isBound) {
             unbindService(serviceConnection)
@@ -503,6 +510,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         binding.apply {
             layoutSongName.tvTitle.text = currentSong.title
             layoutSongName.tvSubTitle.text = currentSong.artist
+            layoutSongName.tvTitle.textAlignment
             layoutSongName.tvTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
             ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.ic_play)
             ivSongPlay.setImageResource(R.drawable.ic_play)
