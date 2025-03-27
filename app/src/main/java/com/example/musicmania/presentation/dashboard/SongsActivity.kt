@@ -273,6 +273,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }
     }
 
+
     override fun onResume() {
         super.onResume()
         updateDeviceVolume()
@@ -542,6 +543,14 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         currentSong = songList[position]
         updatePlaybackState(true)
         initializeService()
+    }
+
+    inner class VolumeUpdateReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == "android.media.VOLUME_CHANGED_ACTION") {
+                updateDeviceVolume()
+            }
+        }
     }
 
     override fun onDestroy() {

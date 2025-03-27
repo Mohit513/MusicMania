@@ -10,6 +10,9 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Binder
@@ -153,7 +156,7 @@ class MusicService : Service() {
             this, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
+        val backgroundImage: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.app_logo)
         remoteViews?.apply {
             setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
             setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist")
@@ -192,17 +195,15 @@ class MusicService : Service() {
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(remoteViews)
             .setContentIntent(pendingIntent)
-            .apply {
-                if (!isAppInForeground) {
-                    setDeleteIntent(deletePendingIntent)
-                }
-            }
+            .setPriority(START_STICKY)
+            .setAllowSystemGeneratedContextualActions(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
             .setShowWhen(false)
             .setAutoCancel(false)
             .setOnlyAlertOnce(true)
+            .setOngoing(true)
             .setOngoing(isAppInForeground || mediaPlayer?.isPlaying == true)
     }
 
