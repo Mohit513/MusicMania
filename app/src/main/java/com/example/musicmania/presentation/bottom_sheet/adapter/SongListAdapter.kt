@@ -30,6 +30,7 @@ class SongListAdapter(
 
     override fun getItemCount() = songList.size
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onBindViewHolder(holder: ViewHolder, @SuppressLint("RecyclerView") position: Int) {
         val song = songList[position]
 

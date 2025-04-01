@@ -53,7 +53,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     private var musicService: MusicService? = null
     private var isBound = false
 
-    var isLockScreenActive = false
+//    var isLockScreenActive = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -76,6 +76,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                     val currentIndex = intent.getIntExtra("currentIndex", -1)
                     val duration = intent.getIntExtra("duration", 0)
                     val currentPosition = intent.getIntExtra("currentPosition", 0)
+                    val rotation = intent.getBooleanExtra("rotation", false)
 
                     if (currentIndex != -1 && currentIndex < songList.size) {
                         songList.forEach { it.isPlaying = false }
@@ -87,6 +88,13 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                     }
 
                     updatePlaybackState(isPlaying)
+
+                    if (rotation) {
+                        startThumbnailRotation()
+                    } else {
+                        stopThumbnailRotation()
+                    }
+
                     updateProgress(currentPosition, duration) {}
                 }
 
@@ -119,9 +127,10 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     private val volumeRunnable = object : Runnable {
         override fun run() {
             updateDeviceVolume()
-            volumeHandler.postDelayed(this, 200) // Check every 200 milliseconds
+            volumeHandler.postDelayed(this, 200)
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
@@ -152,21 +161,21 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
     }
 
-    private fun refreshUI() {
-        if (songList.isNotEmpty()) {
-            songList.forEach { it.isPlaying = false }
-
-            currentSong = songList[currentSongIndex]
-            currentSong.isPlaying = isPlaying
-            updateSongInfo(currentSong)
-        }
-
-        binding.apply {
-            ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.app_logo)
-            layoutSongName.tvTitle.text = currentSong.title
-            layoutSongName.tvSubTitle.text = currentSong.artist
-        }
-    }
+//    private fun refreshUI() {
+//        if (songList.isNotEmpty()) {
+//            songList.forEach { it.isPlaying = false }
+//
+//            currentSong = songList[currentSongIndex]
+//            currentSong.isPlaying = isPlaying
+//            updateSongInfo(currentSong)
+//        }
+//
+//        binding.apply {
+//            ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.app_logo)
+//            layoutSongName.tvTitle.text = currentSong.title
+//            layoutSongName.tvSubTitle.text = currentSong.artist
+//        }
+//    }
 
     private fun checkAndRequestPermissions() {
         if (!PermissionUtils.checkAllPermissions(this)) {
@@ -200,7 +209,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent?.let { handleNotificationIntent(it) }
+        intent.let { handleNotificationIntent(it) }
     }
 
     private fun updatePlaybackState(isPlaying: Boolean) {
@@ -213,7 +222,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             ivSongPlay.tag = if (isPlaying) "playing" else "paused"
             if (isPlaying) {
                 startThumbnailRotation()
-            } else {
+            } else  {
                 stopThumbnailRotation()
             }
         }
@@ -304,7 +313,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         startProgressUpdates()
 
         if (isPlaying) {
-            startThumbnailRotation()
             startProgressUpdates()
         }
     }
@@ -376,7 +384,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                 intent.putExtra("isPlaying", isPlaying)
                 startActivity(intent)
             }
-            tvOpenSongList.setOnClickListener {
+            layoutOpenSongList.setOnClickListener {
                 showSongListBottomSheet()
             }
 
@@ -385,7 +393,8 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                 if (songList.isNotEmpty()) {
                     sendServiceCommand(Constant.ACTION_PLAY_PAUSE)
                 } else {
-                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
 
@@ -393,7 +402,8 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                 if (songList.isNotEmpty()) {
                     sendServiceCommand(Constant.ACTION_PREVIOUS)
                 } else {
-                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
 
@@ -401,11 +411,12 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                 if (songList.isNotEmpty()) {
                     sendServiceCommand(Constant.ACTION_NEXT)
                 } else {
-                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@SongsActivity, "No songs available.", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
 
-            layoutSongProgress.seekBar.addOnSliderTouchListener(object :
+            layoutSongProgress.slider.addOnSliderTouchListener(object :
                 Slider.OnSliderTouchListener {
                 override fun onStartTrackingTouch(slider: Slider) {
                     handler.removeCallbacksAndMessages(null)
@@ -419,7 +430,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                 }
             })
 
-            layoutSongProgress.seekBar.addOnChangeListener { _, value, fromUser ->
+            layoutSongProgress.slider.addOnChangeListener { _, value, fromUser ->
                 if (fromUser) {
                     sendServiceCommand(Constant.ACTION_SEEK, value.toInt())
                 }
@@ -450,14 +461,14 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }, 1000)
     }
 
-    private fun broadcastProgress(currentPosition: Int, duration: Int) {
-        Intent(Constant.BROADCAST_PROGRESS).apply {
-            setPackage(packageName)
-            putExtra("currentPosition", currentPosition)
-            putExtra("duration", duration)
-            sendBroadcast(this)
-        }
-    }
+//    private fun broadcastProgress(currentPosition: Int, duration: Int) {
+//        Intent(Constant.BROADCAST_PROGRESS).apply {
+//            setPackage(packageName)
+//            putExtra("currentPosition", currentPosition)
+//            putExtra("duration", duration)
+//            sendBroadcast(this)
+//        }
+//    }
 
     private fun setUpView() {
         songList.clear()
@@ -488,7 +499,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
     private fun updateProgress(currentPosition: Int, duration: Int, callback: (Any) -> Unit) {
         if (duration > 0) {
-            binding.layoutSongProgress.seekBar.apply {
+            binding.layoutSongProgress.slider.apply {
                 if (!isPressed) {
                     valueFrom = 0f
                     valueTo = duration.toFloat()
@@ -554,6 +565,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         sendServiceCommand(Constant.ACTION_PLAY_PAUSE)
     }
 
+    @SuppressLint("SetTextI18n")
     private fun updateDeviceVolume() {
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
@@ -587,7 +599,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     private fun unregisterVolumeObserver() {
         contentResolver.unregisterContentObserver(audioVolumeObserver)
     }
-
 
     inner class VolumeUpdateReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {

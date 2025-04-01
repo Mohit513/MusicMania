@@ -55,7 +55,7 @@ class SongListBottomSheetFragment(
             dismiss()
         }
         
-        binding.recyclerView.apply {
+        binding.recyclerViewBottomList.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = songListAdapter
         }

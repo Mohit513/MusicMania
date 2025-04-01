@@ -11,7 +11,7 @@
         android:layout_height="match_parent">
 
         <include
-            android:id="@+id/layout_item_song_list"
+            android:id="@+id/layoutItemSongList"
             layout="@layout/layout_title_with_subtitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

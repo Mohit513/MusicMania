@@ -10,9 +10,6 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -26,11 +23,11 @@ import android.os.Looper
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.musicmania.Constant
 import com.example.musicmania.R
-import com.example.musicmania.presentation.dashboard.SongsActivity
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.example.musicmania.presentation.dashboard.SongsActivity
 
 class MusicService : Service() {
     var mediaPlayer: MediaPlayer? = null
@@ -62,6 +59,7 @@ class MusicService : Service() {
                 }
                 hadAudioFocus = false;
             }
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 if (mediaPlayer?.isPlaying == true) {
                     mediaPlayer?.pause()
@@ -70,9 +68,11 @@ class MusicService : Service() {
                     updateNotification()
                 }
             }
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 mediaPlayer?.setVolume(0.2f, 0.2f)
             }
+
             AudioManager.AUDIOFOCUS_GAIN -> {
                 if (!isPlaying && hadAudioFocus) {
                     mediaPlayer?.start()
@@ -82,9 +82,11 @@ class MusicService : Service() {
                 }
                 mediaPlayer?.setVolume(1.0f, 1.0f)
             }
+
             AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK -> {
-                mediaPlayer?.setVolume(1.0f, 1.0f);
+                mediaPlayer?.setVolume(1.0f, 1.0f)
             }
+
             AudioManager.AUDIOFOCUS_GAIN_TRANSIENT -> {
                 if (!isPlaying && hadAudioFocus) {
                     mediaPlayer?.start()
@@ -102,25 +104,22 @@ class MusicService : Service() {
         super.onCreate()
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
-                )
-                .setAcceptsDelayedFocusGain(true)
-                .setOnAudioFocusChangeListener(afChangeListener)
-                .build()
+            audioFocusRequest =
+                AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
+                        AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
+                    ).setAcceptsDelayedFocusGain(true)
+                    .setOnAudioFocusChangeListener(afChangeListener).build()
         }
-//        createNotificationChannel()
-//        setupNotification()
+        createNotificationChannel()
+        setupNotification()
         registerActivityLifecycleCallbacks()
     }
 
     private fun registerActivityLifecycleCallbacks() {
         val application = application as Application
-        application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+        application.registerActivityLifecycleCallbacks(object :
+            Application.ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {}
 
@@ -169,6 +168,7 @@ class MusicService : Service() {
                 val seekPosition = intent.getIntExtra("seekPosition", 0)
                 seekTo(seekPosition)
             }
+
             "ACTION_VOLUME_UP" -> adjustVolume(true)
             "ACTION_VOLUME_DOWN" -> adjustVolume(false)
             Constant.ACTION_INIT_SERVICE -> {
@@ -178,6 +178,7 @@ class MusicService : Service() {
                 initializeService(autoPlay)
                 broadcastPlaybackState()
             }
+
             "ACTION_STOP" -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -198,9 +199,7 @@ class MusicService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                Constant.CHANNEL_ID,
-                "Music Service Channel",
-                NotificationManager.IMPORTANCE_HIGH
+                Constant.CHANNEL_ID, "Music Service Channel", NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Channel for Music Service"
                 setShowBadge(true)
@@ -220,8 +219,7 @@ class MusicService : Service() {
             putExtra("isPlaying", mediaPlayer?.isPlaying ?: false)
         }
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 //        val backgroundImage: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.app_logo)
         remoteViews?.apply {
@@ -233,12 +231,20 @@ class MusicService : Service() {
                 if (mediaPlayer?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play
             )
 
-            setOnClickPendingIntent(R.id.notification_play_pause, createActionPendingIntent(Constant.ACTION_PLAY_PAUSE))
-            setOnClickPendingIntent(R.id.notification_previous, createActionPendingIntent(Constant.ACTION_PREVIOUS))
-            setOnClickPendingIntent(R.id.notification_next, createActionPendingIntent(Constant.ACTION_NEXT))
+            setOnClickPendingIntent(
+                R.id.notification_play_pause, createActionPendingIntent(Constant.ACTION_PLAY_PAUSE)
+            )
+            setOnClickPendingIntent(
+                R.id.notification_previous, createActionPendingIntent(Constant.ACTION_PREVIOUS)
+            )
+            setOnClickPendingIntent(
+                R.id.notification_next, createActionPendingIntent(Constant.ACTION_NEXT)
+            )
 
             mediaPlayer?.let {
                 setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
+                // Add rotation info to the broadcast
+                broadcastPlaybackState(it.isPlaying)
             }
         }
 
@@ -257,20 +263,14 @@ class MusicService : Service() {
 //        } else null
 
         return NotificationCompat.Builder(this, Constant.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_play)
-            .setColor(getColor(R.color.white))
+            .setSmallIcon(R.drawable.ic_play).setColor(getColor(R.color.white))
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(remoteViews)
-            .setContentIntent(pendingIntent)
-            .setPriority(START_STICKY)
-            .setAllowSystemGeneratedContextualActions(true)
+            .setCustomContentView(remoteViews).setContentIntent(pendingIntent)
+            .setPriority(START_STICKY).setAllowSystemGeneratedContextualActions(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-            .setShowWhen(false)
-            .setAutoCancel(false)
-            .setOnlyAlertOnce(true)
-            .setOngoing(true)
+            .setCategory(NotificationCompat.CATEGORY_TRANSPORT).setShowWhen(false)
+            .setAutoCancel(false).setOnlyAlertOnce(true).setOngoing(true)
             .setOngoing(isAppInForeground || mediaPlayer?.isPlaying == true)
     }
 
@@ -284,8 +284,7 @@ class MusicService : Service() {
                 Constant.ACTION_NEXT -> 1
                 Constant.ACTION_PREVIOUS -> 2
                 else -> 3
-            }, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            }, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
 
@@ -381,7 +380,8 @@ class MusicService : Service() {
     private fun playPreviousSong() {
         try {
             if (songList.isEmpty()) return
-            currentSongIndex = if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
+            currentSongIndex =
+                if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
             playSong(songList[currentSongIndex], true) // Auto-play when changing songs
             broadcastPlaybackState()
         } catch (e: Exception) {
@@ -418,8 +418,11 @@ class MusicService : Service() {
                                 player.currentPosition,
                                 false
                             )
-                            val notificationManager = getSystemService(NotificationManager::class.java)
-                            notificationManager?.notify(Constant.NOTIFICATION_ID, notificationBuilder?.build())
+                            val notificationManager =
+                                getSystemService(NotificationManager::class.java)
+                            notificationManager?.notify(
+                                Constant.NOTIFICATION_ID, notificationBuilder?.build()
+                            )
                         }
                     }
                 }
@@ -428,7 +431,7 @@ class MusicService : Service() {
         })
     }
 
-    private fun broadcastPlaybackState() {
+    private fun broadcastPlaybackState(rotation: Boolean = mediaPlayer?.isPlaying ?: false) {
         Intent().apply {
             action = Constant.BROADCAST_PLAYBACK_STATE
             `package` = packageName
@@ -442,6 +445,8 @@ class MusicService : Service() {
             putExtra("icon", currentSong?.icon)
             putExtra("duration", mediaPlayer?.duration ?: 0)
             putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
+//            putExtra("rotation", mediaPlayer?.isPlaying ?: false)
+            putExtra("rotation", rotation)
             sendBroadcast(this)
         }
     }
@@ -496,15 +501,20 @@ class MusicService : Service() {
         if (isForegroundService && remoteViews != null) {
             remoteViews?.apply {
                 setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
-                setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist")
-                setImageViewResource(R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play)
+                setTextViewText(
+                    R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist"
+                )
+                setImageViewResource(
+                    R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play
+                )
                 setImageViewResource(
                     R.id.notification_play_pause,
                     if (mediaPlayer?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play
                 )
-
                 mediaPlayer?.let {
                     setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
+                    // Add rotation info to the broadcast
+                    broadcastPlaybackState(it.isPlaying)
                 }
             }
             val notificationManager = getSystemService(NotificationManager::class.java)
@@ -524,6 +534,7 @@ class MusicService : Service() {
             putExtra("subTitle", currentSong?.artist)
             putExtra("icon", currentSong?.icon)
             sendBroadcast(this)
+            updateNotification()
         }
     }
 
@@ -533,11 +544,8 @@ class MusicService : Service() {
                 audioManager?.requestAudioFocus(request)
             } ?: AudioManager.AUDIOFOCUS_REQUEST_FAILED
         } else {
-            @Suppress("DEPRECATION")
-            audioManager?.requestAudioFocus(
-                afChangeListener,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN
+            @Suppress("DEPRECATION") audioManager?.requestAudioFocus(
+                afChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN
             )
         }
         hadAudioFocus = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
@@ -551,8 +559,7 @@ class MusicService : Service() {
                 audioManager?.abandonAudioFocusRequest(request)
             }
         } else {
-            @Suppress("DEPRECATION")
-            audioManager?.abandonAudioFocus(afChangeListener)
+            @Suppress("DEPRECATION") audioManager?.abandonAudioFocus(afChangeListener)
         }
         hadAudioFocus = false
     }

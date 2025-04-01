@@ -54,13 +54,13 @@
         app:layout_constraintStart_toEndOf="@id/ivMenu"
         app:layout_constraintTop_toTopOf="@id/tvVolumePercentage" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvVolumePercentage"
         android:layout_width="@dimen/_46sdp"
         android:layout_height="@dimen/_46sdp"
         android:layout_marginHorizontal="@dimen/_20sdp"
         android:layout_marginTop="@dimen/_24sdp"
-        android:padding="@dimen/_2sdp"
+        android:paddingLeft="@dimen/_3sdp"
         android:background="@drawable/rounded_circular_view"
         android:elevation="@dimen/_4sdp"
         android:gravity="center"
@@ -113,7 +113,7 @@
         android:elevation="@dimen/_4sdp"
         android:scaleType="center"
         android:tint="@color/white"
-        app:layout_constraintBottom_toTopOf="@id/tvOpenSongList"
+        app:layout_constraintBottom_toTopOf="@id/layoutOpenSongList"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:shapeAppearance="@style/circle_image_view"
@@ -141,7 +141,7 @@
         app:strokeWidth="@dimen/_2sdp" />
 
     <LinearLayout
-        android:id="@+id/tvOpenSongList"
+        android:id="@+id/layoutOpenSongList"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
