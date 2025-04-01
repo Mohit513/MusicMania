@@ -9,12 +9,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.Settings
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsetsController
@@ -104,6 +107,21 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }
     }
 
+    private val audioVolumeObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            super.onChange(selfChange, uri)
+            if (uri == Settings.System.CONTENT_URI) {
+                updateDeviceVolume()
+            }
+        }
+    }
+    private val volumeHandler = Handler(Looper.getMainLooper())
+    private val volumeRunnable = object : Runnable {
+        override fun run() {
+            updateDeviceVolume()
+            volumeHandler.postDelayed(this, 200) // Check every 200 milliseconds
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySongsBinding.inflate(layoutInflater)
@@ -274,6 +292,8 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         super.onResume()
         updateDeviceVolume()
         registerReceivers()
+        registerVolumeObserver()
+        startVolumeUpdates()
         // showLockScreenIfNeeded() //todo
 
         Intent(this, Constant::class.java).also { intent ->
@@ -294,6 +314,8 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         try {
             unregisterReceiver(volumeReceiver)
             unregisterReceiver(playbackReceiver)
+            unregisterVolumeObserver()
+            stopVolumeUpdates()
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
         }
@@ -304,6 +326,14 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             unbindService(serviceConnection)
             isBound = false
         }
+    }
+
+    private fun startVolumeUpdates() {
+        volumeHandler.post(volumeRunnable)
+    }
+
+    private fun stopVolumeUpdates() {
+        volumeHandler.removeCallbacks(volumeRunnable)
     }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
@@ -488,12 +518,14 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private fun updateCurrentTime(position: Int) {
         val minutes = (position / 1000 / 60)
         val seconds = (position / 1000 % 60)
         binding.layoutSongProgress.tvCurrentTime.text = String.format("%02d:%02d", minutes, seconds)
     }
 
+    @SuppressLint("DefaultLocale")
     private fun updateTotalTime(duration: Int) {
         val minutes = (duration / 1000 / 60)
         val seconds = (duration / 1000 % 60)
@@ -530,7 +562,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     }
 
     private fun setUpStatusBar() {
-
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ViewCompat.getWindowInsetsController(window.decorView)?.isAppearanceLightStatusBars = true
         window.decorView.top = getColor(R.color.pomegranate)
@@ -544,6 +575,19 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         updatePlaybackState(true)
         initializeService(true)
     }
+
+    private fun registerVolumeObserver() {
+        contentResolver.registerContentObserver(
+            Settings.System.CONTENT_URI,
+            true,
+            audioVolumeObserver
+        )
+    }
+
+    private fun unregisterVolumeObserver() {
+        contentResolver.unregisterContentObserver(audioVolumeObserver)
+    }
+
 
     inner class VolumeUpdateReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {

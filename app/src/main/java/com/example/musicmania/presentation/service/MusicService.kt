@@ -176,6 +176,7 @@ class MusicService : Service() {
                 currentSongIndex = intent.getIntExtra("currentIndex", 0)
                 val autoPlay = intent.getBooleanExtra("autoPlay", false)
                 initializeService(autoPlay)
+                broadcastPlaybackState()
             }
             "ACTION_STOP" -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -313,6 +314,7 @@ class MusicService : Service() {
                     true
                 }
             }
+            startProgressUpdates()
             updateNotification()
             broadcastPlaybackState()
         }
@@ -372,7 +374,7 @@ class MusicService : Service() {
 
     private fun playNextSong() {
         currentSongIndex = (currentSongIndex + 1) % songList.size
-        playSong(songList[currentSongIndex], true) // Auto-play when changing songs
+        playSong(songList[currentSongIndex], true)
         broadcastPlaybackState()
     }
 
@@ -409,7 +411,6 @@ class MusicService : Service() {
                     if (player.isPlaying) {
                         broadcastProgress(player.currentPosition, player.duration)
                         broadcastPlaybackState()
-                        // Update only progress in notification
                         if (isForegroundService && remoteViews != null) {
                             remoteViews?.setProgressBar(
                                 R.id.notification_progress,
