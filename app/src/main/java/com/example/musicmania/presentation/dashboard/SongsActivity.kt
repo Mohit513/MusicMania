@@ -75,12 +75,10 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                     val currentPosition = intent.getIntExtra("currentPosition", 0)
 
                     if (currentIndex != -1 && currentIndex < songList.size) {
-                        // Reset isPlaying for all songs
                         songList.forEach { it.isPlaying = false }
 
                         currentSongIndex = currentIndex
                         currentSong = songList[currentIndex]
-                        // Set isPlaying only for current song
                         currentSong.isPlaying = isPlaying
                         updateSongInfo(currentSong)
                     }
@@ -137,13 +135,10 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     }
 
     private fun refreshUI() {
-        // After updating the song list, you can ensure UI elements are updated
         if (songList.isNotEmpty()) {
-            // Reset isPlaying for all songs
             songList.forEach { it.isPlaying = false }
 
             currentSong = songList[currentSongIndex]
-            // Set isPlaying for current song
             currentSong.isPlaying = isPlaying
             updateSongInfo(currentSong)
         }
@@ -197,6 +192,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             ivSongPlay.setImageResource(
                 if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
             )
+            ivSongPlay.tag = if (isPlaying) "playing" else "paused"
             if (isPlaying) {
                 startThumbnailRotation()
             } else {
@@ -289,6 +285,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
         if (isPlaying) {
             startThumbnailRotation()
+            startProgressUpdates()
         }
     }
 
@@ -438,7 +435,9 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         if (songList.isNotEmpty()) {
             currentSong = songList[currentSongIndex]
             updateSongInfo(currentSong)
-            initializeService()
+            initializeService(false)
+            binding.ivSongPlay.setImageResource(R.drawable.ic_play)
+            binding.ivSongPlay.tag = "paused"
         } else {
             setDefaultSong()
         }
@@ -479,11 +478,12 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }
     }
 
-    private fun initializeService() {
+    private fun initializeService(autoPlay: Boolean = false) {
         Intent(this, MusicService::class.java).apply {
             action = Constant.ACTION_INIT_SERVICE
             putExtra("songList", songList)
             putExtra("currentIndex", currentSongIndex)
+            putExtra("autoPlay", autoPlay)
             startService(this)
         }
     }
@@ -542,7 +542,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         currentSongIndex = position
         currentSong = songList[position]
         updatePlaybackState(true)
-        initializeService()
+        initializeService(true)
     }
 
     inner class VolumeUpdateReceiver : BroadcastReceiver() {

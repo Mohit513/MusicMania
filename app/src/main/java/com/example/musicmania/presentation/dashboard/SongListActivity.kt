@@ -108,11 +108,10 @@ class SongListActivity : BaseActivity() {
                 action = Constant.ACTION_INIT_SERVICE
                 putParcelableArrayListExtra("songList", songList)
                 putExtra("currentIndex", currentSongIndex)
-            }
-            musicService?.mediaPlayer?.let {
-                isPlaying = it.isPlaying
+                putExtra("autoPlay", true)
             }
             startService(intent)
+            isPlaying = true
             updateAdapterPlayingState()
         }
     }

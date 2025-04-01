@@ -13,6 +13,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Binder
@@ -45,12 +47,74 @@ class MusicService : Service() {
     private var isAppInForeground = false
 
     private var currentVolume = 100 // Store volume as percentage
-    private val audioManager by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    private var audioManager: AudioManager? = null
+    private var audioFocusRequest: AudioFocusRequest? = null
+    private var hadAudioFocus = false
+
+    private val afChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                if (mediaPlayer?.isPlaying == true) {
+                    mediaPlayer?.pause()
+                    isPlaying = false
+                    broadcastPlaybackState()
+                    updateNotification()
+                }
+                hadAudioFocus = false;
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                if (mediaPlayer?.isPlaying == true) {
+                    mediaPlayer?.pause()
+                    isPlaying = false
+                    broadcastPlaybackState()
+                    updateNotification()
+                }
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                mediaPlayer?.setVolume(0.2f, 0.2f)
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                if (!isPlaying && hadAudioFocus) {
+                    mediaPlayer?.start()
+                    isPlaying = true
+                    broadcastPlaybackState()
+                    updateNotification()
+                }
+                mediaPlayer?.setVolume(1.0f, 1.0f)
+            }
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK -> {
+                mediaPlayer?.setVolume(1.0f, 1.0f);
+            }
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT -> {
+                if (!isPlaying && hadAudioFocus) {
+                    mediaPlayer?.start()
+                    isPlaying = true;
+                    broadcastPlaybackState();
+                    updateNotification();
+                }
+                mediaPlayer?.setVolume(1.0f, 1.0f);
+            }
+        }
+    }
+    private var isPlaying = false
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
-        setupNotification()
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setAcceptsDelayedFocusGain(true)
+                .setOnAudioFocusChangeListener(afChangeListener)
+                .build()
+        }
+//        createNotificationChannel()
+//        setupNotification()
         registerActivityLifecycleCallbacks()
     }
 
@@ -63,6 +127,7 @@ class MusicService : Service() {
             override fun onActivityResumed(activity: Activity) {
                 if (activity is SongsActivity) {
                     isAppInForeground = true
+                    requestAudioFocus()
                     updateNotification()
                 }
             }
@@ -70,6 +135,7 @@ class MusicService : Service() {
             override fun onActivityPaused(activity: Activity) {
                 if (activity is SongsActivity) {
                     isAppInForeground = false
+//                    abandonAudioFocus()
                     updateNotification()
                 }
             }
@@ -106,10 +172,10 @@ class MusicService : Service() {
             "ACTION_VOLUME_UP" -> adjustVolume(true)
             "ACTION_VOLUME_DOWN" -> adjustVolume(false)
             Constant.ACTION_INIT_SERVICE -> {
-                @Suppress("UNCHECKED_CAST")
                 songList = intent.getParcelableArrayListExtra("songList") ?: ArrayList()
                 currentSongIndex = intent.getIntExtra("currentIndex", 0)
-                initializeService()
+                val autoPlay = intent.getBooleanExtra("autoPlay", false)
+                initializeService(autoPlay)
             }
             "ACTION_STOP" -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -156,7 +222,7 @@ class MusicService : Service() {
             this, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val backgroundImage: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.app_logo)
+//        val backgroundImage: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.app_logo)
         remoteViews?.apply {
             setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
             setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist")
@@ -175,19 +241,19 @@ class MusicService : Service() {
             }
         }
 
-        // Create delete intent only if app is not in foreground
-        val deleteIntent = if (!isAppInForeground) {
-            Intent(this, MusicService::class.java).apply {
-                action = "ACTION_STOP"
-            }
-        } else null
 
-        val deletePendingIntent = if (deleteIntent != null) {
-            PendingIntent.getService(
-                this, 4, deleteIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        } else null
+//        val deleteIntent = if (!isAppInForeground) {
+//            Intent(this, MusicService::class.java).apply {
+//                action = "ACTION_STOP"
+//            }
+//        } else null
+//
+//        val deletePendingIntent = if (deleteIntent != null) {
+//            PendingIntent.getService(
+//                this, 4, deleteIntent,
+//                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//            )
+//        } else null
 
         return NotificationCompat.Builder(this, Constant.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_play)
@@ -222,13 +288,49 @@ class MusicService : Service() {
         )
     }
 
-    private fun playSong(song: SongListDataModel) {
+    private fun initializeService(autoPlay: Boolean = false) {
+        if (songList.isNotEmpty() && currentSongIndex < songList.size) {
+            currentSong = songList[currentSongIndex]
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(currentSong?.subTitle)
+                prepare()
+                if (autoPlay) {
+                    if (requestAudioFocus()) {
+                        start()
+                        this@MusicService.isPlaying = true
+                    }
+                }
+                setOnCompletionListener {
+                    playNextSong()
+                }
+                setOnPreparedListener {
+                    broadcastProgress(0, duration)
+                    broadcastPlaybackState()
+                }
+                setOnErrorListener { _, _, _ ->
+                    broadcastPlaybackState()
+                    true
+                }
+            }
+            updateNotification()
+            broadcastPlaybackState()
+        }
+    }
+
+    private fun playSong(song: SongListDataModel, autoPlay: Boolean = false) {
         currentSong = song
         mediaPlayer?.release()
         mediaPlayer = MediaPlayer().apply {
             setDataSource(song.subTitle)
             prepare()
-            start()
+            if (autoPlay || isPlaying) {
+                if (requestAudioFocus()) {
+                    start()
+
+                    this@MusicService.isPlaying = true
+                }
+            }
             setOnCompletionListener {
                 playNextSong()
             }
@@ -250,8 +352,18 @@ class MusicService : Service() {
         mediaPlayer?.let { player ->
             if (player.isPlaying) {
                 player.pause()
+                isPlaying = false
+                abandonAudioFocus()
+                startProgressUpdates()
+                createNotificationChannel()
+                setupNotification()
             } else {
-                player.start()
+                if (requestAudioFocus()) {
+                    player.start()
+                    isPlaying = true
+                    startProgressUpdates()
+                    setupNotification()
+                }
             }
             broadcastPlaybackState()
             updateNotification()
@@ -260,15 +372,22 @@ class MusicService : Service() {
 
     private fun playNextSong() {
         currentSongIndex = (currentSongIndex + 1) % songList.size
-        playSong(songList[currentSongIndex])
+        playSong(songList[currentSongIndex], true) // Auto-play when changing songs
         broadcastPlaybackState()
-
     }
 
     private fun playPreviousSong() {
-        currentSongIndex = if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
-        playSong(songList[currentSongIndex])
-        broadcastPlaybackState()
+        try {
+            if (songList.isEmpty()) return
+            currentSongIndex = if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
+            playSong(songList[currentSongIndex], true) // Auto-play when changing songs
+            broadcastPlaybackState()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (songList.isNotEmpty()) {
+                initializeService(true) // Auto-play on recovery
+            }
+        }
     }
 
     private fun seekTo(position: Int) {
@@ -337,12 +456,6 @@ class MusicService : Service() {
         }
     }
 
-    private fun initializeService() {
-        if (songList.isNotEmpty() && currentSongIndex < songList.size) {
-            playSong(songList[currentSongIndex])
-        }
-    }
-
     private fun prepareSong() {
         mediaPlayer?.apply {
             reset()
@@ -362,7 +475,7 @@ class MusicService : Service() {
     }
 
     fun adjustVolume(increase: Boolean) {
-        val step = 5 // Adjust volume by 5%
+        val step = 1 // Adjust volume by 5%
         val newVolume = if (increase) {
             (currentVolume + step).coerceAtMost(100)
         } else {
@@ -380,7 +493,6 @@ class MusicService : Service() {
 
     private fun updateNotification() {
         if (isForegroundService && remoteViews != null) {
-            // Only update content and progress
             remoteViews?.apply {
                 setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
                 setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist")
@@ -394,8 +506,6 @@ class MusicService : Service() {
                     setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
                 }
             }
-
-            // Just notify with existing builder
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager?.notify(Constant.NOTIFICATION_ID, notificationBuilder?.build())
         }
@@ -416,6 +526,36 @@ class MusicService : Service() {
         }
     }
 
+    private fun requestAudioFocus(): Boolean {
+        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { request ->
+                audioManager?.requestAudioFocus(request)
+            } ?: AudioManager.AUDIOFOCUS_REQUEST_FAILED
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager?.requestAudioFocus(
+                afChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN
+            )
+        }
+        hadAudioFocus = result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        return hadAudioFocus
+    }
+
+
+    private fun abandonAudioFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest?.let { request ->
+                audioManager?.abandonAudioFocusRequest(request)
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager?.abandonAudioFocus(afChangeListener)
+        }
+        hadAudioFocus = false
+    }
+
     override fun stopService(name: Intent?): Boolean {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -424,6 +564,7 @@ class MusicService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        abandonAudioFocus()
         handler.removeCallbacksAndMessages(null)
         mediaPlayer?.release()
         mediaPlayer = null
