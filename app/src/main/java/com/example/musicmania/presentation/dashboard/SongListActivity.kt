@@ -116,7 +116,6 @@ class SongListActivity : BaseActivity() {
         }
     }
 
-
     private fun updateAdapterPlayingState() {
         if (isBound && musicService != null) {
             musicService?.mediaPlayer?.let {
@@ -166,10 +165,6 @@ class SongListActivity : BaseActivity() {
         binding.etSearch.text?.clear()
         filterSearchList("")
     }
-
-//    private fun showNoDataLayout(isEmpty: Boolean) {
-//        binding.noDataLayout.visibility = if (isEmpty) View.VISIBLE else View.GONE
-//    }
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     override fun onStart() {
