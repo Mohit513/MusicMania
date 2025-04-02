@@ -53,5 +53,7 @@ dependencies {
     implementation(libs.sdp.android)
 
     implementation(libs.ssp.android)
+    implementation("androidx.media:media:1.6.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 
 }

@@ -37,7 +37,7 @@ class MusicService : Service() {
     private var currentSongIndex = 0
     private val handler = Handler(Looper.getMainLooper())
 
-    private val binder = MusicBinder()
+//    private val binder = MusicBinder()
 
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var isForegroundService = false
@@ -58,7 +58,7 @@ class MusicService : Service() {
                     broadcastPlaybackState()
                     updateNotification()
                 }
-                hadAudioFocus = false;
+                hadAudioFocus = false
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
@@ -91,15 +91,24 @@ class MusicService : Service() {
             AudioManager.AUDIOFOCUS_GAIN_TRANSIENT -> {
                 if (!isPlaying && hadAudioFocus) {
                     mediaPlayer?.start()
-                    isPlaying = true;
-                    broadcastPlaybackState();
-                    updateNotification();
+                    isPlaying = true
+                    broadcastPlaybackState()
+                    updateNotification()
                 }
-                mediaPlayer?.setVolume(1.0f, 1.0f);
+                mediaPlayer?.setVolume(1.0f, 1.0f)
             }
         }
     }
     private var isPlaying = false
+
+
+    override fun onBind(intent: Intent): IBinder {
+        return MusicBinder()
+    }
+
+    inner class MusicBinder : Binder() {
+        fun getService(): MusicService = this@MusicService
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -112,8 +121,10 @@ class MusicService : Service() {
                     ).setAcceptsDelayedFocusGain(true)
                     .setOnAudioFocusChangeListener(afChangeListener).build()
         }
-        createNotificationChannel()
-        setupNotification()
+
+            createNotificationChannel()
+            setupNotification()
+
         registerActivityLifecycleCallbacks()
     }
 
@@ -186,18 +197,9 @@ class MusicService : Service() {
             }
         }
 
-        return START_NOT_STICKY
+        return START_STICKY
     }
-
-    override fun onBind(intent: Intent): IBinder {
-        return MusicBinder()
-    }
-
-    inner class MusicBinder : Binder() {
-        fun getService(): MusicService = this@MusicService
-    }
-
-    private fun createNotificationChannel() {
+    fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 Constant.CHANNEL_ID, "Music Service Channel", NotificationManager.IMPORTANCE_HIGH
@@ -209,6 +211,16 @@ class MusicService : Service() {
             }
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    fun updateNotificationFromActivity() {
+        if (isForegroundService) {
+            notificationBuilder = createCustomNotification()
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.notify(Constant.NOTIFICATION_ID, notificationBuilder?.build())
+            createNotificationChannel()
+            updateNotification()
         }
     }
 
@@ -245,7 +257,6 @@ class MusicService : Service() {
 
             mediaPlayer?.let {
                 setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
-                // Add rotation info to the broadcast
                 broadcastPlaybackState(it.isPlaying)
             }
         }
@@ -466,16 +477,16 @@ class MusicService : Service() {
         }
     }
 
-    private fun prepareSong() {
-        mediaPlayer?.apply {
-            reset()
-            setDataSource(currentSong?.subTitle ?: return)
-            prepare()
-            // Don't start automatically
-            updateNotification()
-            broadcastSongChange()
-        }
-    }
+//    private fun prepareSong() {
+//        mediaPlayer?.apply {
+//            reset()
+//            setDataSource(currentSong?.subTitle ?: return)
+//            prepare()
+//            // Don't start automatically
+//            updateNotification()
+//            broadcastSongChange()
+//        }
+//    }
 
     fun setVolume(volume: Int) {
         currentVolume = volume.coerceIn(0, 100)
@@ -501,7 +512,7 @@ class MusicService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
-    private fun updateNotification() {
+    fun updateNotification() {
         if (isForegroundService && remoteViews != null) {
             remoteViews?.apply {
                 setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
@@ -525,21 +536,21 @@ class MusicService : Service() {
         }
     }
 
-    private fun broadcastSongChange() {
-        Intent().apply {
-            action = Constant.BROADCAST_PLAYBACK_STATE
-            `package` = packageName
-            flags = Intent.FLAG_RECEIVER_REGISTERED_ONLY
-            putExtra("currentIndex", currentSongIndex)
-            putExtra("title", currentSong?.title)
-            putExtra("artist", currentSong?.artist)
-            putExtra("thumbnail", currentSong?.songThumbnail)
-            putExtra("subTitle", currentSong?.artist)
-            putExtra("icon", currentSong?.icon)
-            sendBroadcast(this)
-            updateNotification()
-        }
-    }
+//    private fun broadcastSongChange() {
+//        Intent().apply {
+//            action = Constant.BROADCAST_PLAYBACK_STATE
+//            `package` = packageName
+//            flags = Intent.FLAG_RECEIVER_REGISTERED_ONLY
+//            putExtra("currentIndex", currentSongIndex)
+//            putExtra("title", currentSong?.title)
+//            putExtra("artist", currentSong?.artist)
+//            putExtra("thumbnail", currentSong?.songThumbnail)
+//            putExtra("subTitle", currentSong?.artist)
+//            putExtra("icon", currentSong?.icon)
+//            sendBroadcast(this)
+//            updateNotification()
+//        }
+//    }
 
     private fun requestAudioFocus(): Boolean {
         val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

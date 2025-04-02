@@ -18,18 +18,19 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.musicmania.Constant
 import com.example.musicmania.base.BaseActivity
 import com.example.musicmania.databinding.ActivitySongListBinding
-import com.example.musicmania.presentation.bottom_sheet.adapter.SongListAdapter
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
+import com.example.musicmania.presentation.dashboard.adapter.SearchSongListAdapter
 import com.example.musicmania.presentation.service.MusicService
 
 class SongListActivity : BaseActivity() {
 
     private var songList: ArrayList<SongListDataModel> = arrayListOf()
     private var commonSearchList: ArrayList<SongListDataModel> = arrayListOf()
+    private val originalIndexMap = mutableMapOf<SongListDataModel, Int>()
     private var currentSongIndex: Int = 0
     private var isPlaying: Boolean = true
     private lateinit var binding: ActivitySongListBinding
-    private lateinit var songListAdapter: SongListAdapter
+    private lateinit var songListAdapter: SearchSongListAdapter
     private var musicService: MusicService? = null
     private var isBound = false
 
@@ -75,11 +76,14 @@ class SongListActivity : BaseActivity() {
         bindMusicService()
         setupSearchListener()
     }
-
     private fun setUpRecyclerView() {
-        songListAdapter = SongListAdapter(applicationContext, commonSearchList) { position ->
-            onSongItemClicked(position)
+        songList.forEachIndexed { index, song ->
+            originalIndexMap[song] = index
         }
+        songListAdapter = SearchSongListAdapter(applicationContext, commonSearchList, { position ->
+            onSongItemClicked(position)
+        }, originalIndexMap)
+
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@SongListActivity)
             adapter = songListAdapter
@@ -99,9 +103,11 @@ class SongListActivity : BaseActivity() {
         }
     }
 
+
     private fun onSongItemClicked(position: Int) {
         val clickedSong = commonSearchList[position]
         val songIndexInOriginalList = songList.indexOf(clickedSong)
+        val previousPlayingPosition = currentSongIndex
         currentSongIndex = songIndexInOriginalList
         if (isBound && musicService != null) {
             val intent = Intent(this, MusicService::class.java).apply {
@@ -112,7 +118,12 @@ class SongListActivity : BaseActivity() {
             }
             startService(intent)
             isPlaying = true
-            updateAdapterPlayingState()
+            if (previousPlayingPosition != -1){
+                songListAdapter.notifyItemChanged(originalIndexMap.values.indexOf(previousPlayingPosition))
+            }
+            songListAdapter.notifyItemChanged(originalIndexMap.values.indexOf(currentSongIndex))
+            musicService?.updateNotificationFromActivity()
+            musicService?.updateNotification()
         }
     }
 
@@ -126,7 +137,6 @@ class SongListActivity : BaseActivity() {
             songListAdapter.updatePlayingState(currentSongIndex, isPlaying)
         }
     }
-
     private fun setupSearchListener() {
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
