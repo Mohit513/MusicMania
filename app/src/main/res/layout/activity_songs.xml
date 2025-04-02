@@ -60,7 +60,7 @@
         android:layout_height="@dimen/_46sdp"
         android:layout_marginHorizontal="@dimen/_20sdp"
         android:layout_marginTop="@dimen/_24sdp"
-        android:paddingLeft="@dimen/_3sdp"
+        android:paddingStart="@dimen/_4sdp"
         android:background="@drawable/rounded_circular_view"
         android:elevation="@dimen/_4sdp"
         android:gravity="center"

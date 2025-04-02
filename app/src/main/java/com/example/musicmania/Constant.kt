@@ -14,6 +14,7 @@ class Constant {
         const val BROADCAST_PLAYBACK_STATE = "com.example.musicmania.service.PLAYBACK_STATE"
         const val BROADCAST_PROGRESS = "com.example.musicmania.service.PROGRESS"
         const val TAG = "SongListBottomSheetFragment"
+
     }
 
 }

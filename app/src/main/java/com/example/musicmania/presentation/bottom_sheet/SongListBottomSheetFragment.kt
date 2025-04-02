@@ -68,7 +68,4 @@ class SongListBottomSheetFragment(
         _binding = null
     }
 
-    companion object {
-        const val TAG = "SongListBottomSheetFragment"
-    }
 }

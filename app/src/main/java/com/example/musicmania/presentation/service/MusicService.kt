@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -221,6 +222,7 @@ class MusicService : Service() {
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        Log.d("songIndex",currentSongIndex.toString())
 //        val backgroundImage: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.app_logo)
         remoteViews?.apply {
             setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
@@ -382,12 +384,12 @@ class MusicService : Service() {
             if (songList.isEmpty()) return
             currentSongIndex =
                 if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
-            playSong(songList[currentSongIndex], true) // Auto-play when changing songs
+            playSong(songList[currentSongIndex], true)
             broadcastPlaybackState()
         } catch (e: Exception) {
             e.printStackTrace()
             if (songList.isNotEmpty()) {
-                initializeService(true) // Auto-play on recovery
+                initializeService(true)
             }
         }
     }
@@ -445,6 +447,8 @@ class MusicService : Service() {
             putExtra("icon", currentSong?.icon)
             putExtra("duration", mediaPlayer?.duration ?: 0)
             putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
+            putExtra("currentPlayingPosition", currentSongIndex)
+            putExtra("isCurrentlyPlaying", mediaPlayer?.isPlaying ?: false)
 //            putExtra("rotation", mediaPlayer?.isPlaying ?: false)
             putExtra("rotation", rotation)
             sendBroadcast(this)
@@ -513,7 +517,6 @@ class MusicService : Service() {
                 )
                 mediaPlayer?.let {
                     setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
-                    // Add rotation info to the broadcast
                     broadcastPlaybackState(it.isPlaying)
                 }
             }
