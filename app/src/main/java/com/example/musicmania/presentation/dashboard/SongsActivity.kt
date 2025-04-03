@@ -610,7 +610,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
     override fun onDestroy() {
         super.onDestroy()
-//        stopService(Intent(this, MusicService::class.java))
+        stopService(Intent(this, MusicService::class.java))
 //        musicService?.onDestroy()
         stopService(intent)
         StopForegroundFlags()

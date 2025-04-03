@@ -588,9 +588,8 @@ class MusicService : Service() {
         super.onDestroy()
         abandonAudioFocus()
         handler.removeCallbacksAndMessages(null)
-        mediaPlayer?.release()
         mediaPlayer = null
         stopSelf()
-        stopService(Intent(this, MusicService::class.java))
+        stopService(Intent(this,MusicService::class.java))
     }
 }
