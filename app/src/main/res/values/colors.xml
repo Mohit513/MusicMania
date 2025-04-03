@@ -4,6 +4,7 @@
     <color name="white">#FFFFFFFF</color>
     <color name="white_15">#26FFFFFF</color>
     <color name="color_primary">#2C3137</color>
+    <color name="color_primary_1">#2B3135</color>
     <color name="color_primary_50">#80026CB9</color>
     <color name="color_primary_15">#26026CB9</color>
     <color name="color_primary_5">#0D026CB9</color>
@@ -16,4 +17,5 @@
     <color name="mako">#41464B</color>
     <color name="shark">#1F2328</color>
     <color name="mako_5">#40454A</color>
+    <color name="mako_6">#33869733</color>
 </resources>

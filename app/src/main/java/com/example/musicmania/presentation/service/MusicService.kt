@@ -180,7 +180,9 @@ class MusicService : Service() {
                 val seekPosition = intent.getIntExtra("seekPosition", 0)
                 seekTo(seekPosition)
             }
-
+            Constant.BROADCAST_PLAYBACK_STATE -> {
+                broadcastPlaybackState()
+            }
             "ACTION_VOLUME_UP" -> adjustVolume(true)
             "ACTION_VOLUME_DOWN" -> adjustVolume(false)
             Constant.ACTION_INIT_SERVICE -> {
@@ -188,9 +190,7 @@ class MusicService : Service() {
                 currentSongIndex = intent.getIntExtra("currentIndex", 0)
                 val autoPlay = intent.getBooleanExtra("autoPlay", false)
                 initializeService(autoPlay)
-                broadcastPlaybackState()
             }
-
             "ACTION_STOP" -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -227,9 +227,10 @@ class MusicService : Service() {
     @SuppressLint("InflateParams", "RemoteViewLayout")
     private fun createCustomNotification(): NotificationCompat.Builder {
         val intent = Intent(this, SongsActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("currentSongIndex", currentSongIndex)
             putExtra("isPlaying", mediaPlayer?.isPlaying ?: false)
+            putExtra("fromNotification", true)
         }
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -327,12 +328,15 @@ class MusicService : Service() {
                 }
             }
             startProgressUpdates()
+            setupNotification()
             updateNotification()
             broadcastPlaybackState()
         }
     }
 
     private fun playSong(song: SongListDataModel, autoPlay: Boolean = false) {
+        // Update currentSongIndex based on the song being played
+        currentSongIndex = songList.indexOfFirst { it.subTitle == song.subTitle }.takeIf { it != -1 } ?: currentSongIndex
         currentSong = song
         mediaPlayer?.release()
         mediaPlayer = MediaPlayer().apply {
@@ -341,7 +345,6 @@ class MusicService : Service() {
             if (autoPlay || isPlaying) {
                 if (requestAudioFocus()) {
                     start()
-
                     this@MusicService.isPlaying = true
                 }
             }
@@ -358,6 +361,7 @@ class MusicService : Service() {
                 true
             }
         }
+        setupNotification() // Ensure notification is created
         updateNotification()
         broadcastPlaybackState()
     }
@@ -454,13 +458,10 @@ class MusicService : Service() {
             putExtra("title", currentSong?.title)
             putExtra("artist", currentSong?.artist)
             putExtra("thumbnail", currentSong?.songThumbnail)
-            putExtra("subTitle", currentSong?.artist)
+            putExtra("subTitle", currentSong?.subTitle)
             putExtra("icon", currentSong?.icon)
             putExtra("duration", mediaPlayer?.duration ?: 0)
             putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
-            putExtra("currentPlayingPosition", currentSongIndex)
-            putExtra("isCurrentlyPlaying", mediaPlayer?.isPlaying ?: false)
-//            putExtra("rotation", mediaPlayer?.isPlaying ?: false)
             putExtra("rotation", rotation)
             sendBroadcast(this)
         }

@@ -38,9 +38,8 @@ import com.example.musicmania.utils.PermissionUtils
 import com.example.musicmania.utils.SongUtils
 import com.google.android.material.slider.Slider
 
-class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListener {
+open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListener {
     private lateinit var binding: ActivitySongsBinding
-    private lateinit var volumeText: TextView
     private lateinit var audioManager: AudioManager
     private lateinit var handler: Handler
     private var currentSong = SongListDataModel()
@@ -52,8 +51,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
     private var musicService: MusicService? = null
     private var isBound = false
-
-//    var isLockScreenActive = false
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -79,11 +76,11 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                     val rotation = intent.getBooleanExtra("rotation", false)
 
                     if (currentIndex != -1 && currentIndex < songList.size) {
-                        songList.forEach { it.isPlaying = false }
-
+                        songList.forEachIndexed { index, song ->
+                            song.isPlaying = index == currentIndex && isPlaying
+                        }
                         currentSongIndex = currentIndex
                         currentSong = songList[currentIndex]
-                        currentSong.isPlaying = isPlaying
                         updateSongInfo(currentSong)
                     }
 
@@ -146,36 +143,43 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                     or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
         }
 
-        checkAndRequestPermissions()
-
         setContentView(binding.root)
-        volumeText = binding.tvVolumePercentage
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        if (intent.flags and Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT != 0) {
+            finish()
+            return
+        }
 
         setUpStatusBar()
         setUpListeners()
-        setUpView()
-        // showLockScreenIfNeeded() //todo
+        checkAndRequestPermissions()
 
         intent?.let { handleNotificationIntent(it) }
-
     }
 
-//    private fun refreshUI() {
-//        if (songList.isNotEmpty()) {
-//            songList.forEach { it.isPlaying = false }
-//
-//            currentSong = songList[currentSongIndex]
-//            currentSong.isPlaying = isPlaying
-//            updateSongInfo(currentSong)
-//        }
-//
-//        binding.apply {
-//            ivSongThumbnail.setImageResource(currentSong.songThumbnail ?: R.drawable.app_logo)
-//            layoutSongName.tvTitle.text = currentSong.title
-//            layoutSongName.tvSubTitle.text = currentSong.artist
-//        }
-//    }
+    private fun handleNotificationIntent(intent: Intent) {
+        val index = intent.getIntExtra("currentSongIndex", -1)
+        val isPlaying = intent.getBooleanExtra("isPlaying", false)
+        val fromNotification = intent.getBooleanExtra("fromNotification", false)
+
+        if (index != -1) {
+            currentSongIndex = index
+            if (fromNotification) {
+                Intent(this, MusicService::class.java).apply {
+                    action = Constant.BROADCAST_PLAYBACK_STATE
+                    startService(this)
+                }
+            } else {
+                updatePlaybackState(isPlaying)
+            }
+        }
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        moveTaskToBack(true)
+    }
 
     private fun checkAndRequestPermissions() {
         if (!PermissionUtils.checkAllPermissions(this)) {
@@ -197,7 +201,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
                 if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                     initializeService()
                     setUpView()
-//                    refreshUI()
                 } else {
                     Toast.makeText(this, "App requires all permission", Toast.LENGTH_SHORT).show()
                     setDefaultSong()
@@ -222,7 +225,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             ivSongPlay.tag = if (isPlaying) "playing" else "paused"
             if (isPlaying) {
                 startThumbnailRotation()
-            } else  {
+            } else {
                 stopThumbnailRotation()
             }
         }
@@ -282,99 +285,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         return super.onKeyUp(keyCode, event)
     }
 
-    private fun handleNotificationIntent(intent: Intent) {
-        val index = intent.getIntExtra("currentSongIndex", -1)
-        val isPlaying = intent.getBooleanExtra("isPlaying", false)
-        if (index != -1) {
-            currentSongIndex = index
-            updatePlaybackState(isPlaying)
-            musicService?.let {
-                if (it.mediaPlayer?.isPlaying != isPlaying) {
-                    sendServiceCommand(Constant.ACTION_PLAY_PAUSE)
-                }
-            }
-        }
-    }
-
-
-    override fun onResume() {
-        super.onResume()
-        updateDeviceVolume()
-        registerReceivers()
-        registerVolumeObserver()
-        startVolumeUpdates()
-        // showLockScreenIfNeeded() //todo
-
-        Intent(this, Constant::class.java).also { intent ->
-            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        }
-
-        handler = Handler(Looper.getMainLooper())
-        startProgressUpdates()
-
-        if (isPlaying) {
-            startProgressUpdates()
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        try {
-            unregisterReceiver(volumeReceiver)
-            unregisterReceiver(playbackReceiver)
-            unregisterVolumeObserver()
-            stopVolumeUpdates()
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
-        }
-        stopThumbnailRotation()
-        // hideLockScreenIfNeeded() //todo
-        handler.removeCallbacksAndMessages(null)
-        if (isBound) {
-            unbindService(serviceConnection)
-            isBound = false
-        }
-    }
-
-    private fun startVolumeUpdates() {
-        volumeHandler.post(volumeRunnable)
-    }
-
-    private fun stopVolumeUpdates() {
-        volumeHandler.removeCallbacks(volumeRunnable)
-    }
-
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private fun registerReceivers() {
-        try {
-            val volumeFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-
-            val playbackFilter = IntentFilter().apply {
-                addAction(Constant.BROADCAST_PLAYBACK_STATE)
-                addAction(Constant.BROADCAST_PROGRESS)
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(
-                    volumeReceiver,
-                    volumeFilter,
-                    Context.RECEIVER_EXPORTED
-                )
-
-                registerReceiver(
-                    playbackReceiver,
-                    playbackFilter,
-                    Context.RECEIVER_NOT_EXPORTED
-                )
-            } else {
-                registerReceiver(volumeReceiver, volumeFilter)
-                registerReceiver(playbackReceiver, playbackFilter)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     private fun setUpListeners() {
         binding.apply {
             ivMenu.setOnClickListener {
@@ -387,7 +297,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
             layoutOpenSongList.setOnClickListener {
                 showSongListBottomSheet()
             }
-
 
             ivSongPlay.setOnClickListener {
                 if (songList.isNotEmpty()) {
@@ -461,15 +370,6 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }, 1000)
     }
 
-//    private fun broadcastProgress(currentPosition: Int, duration: Int) {
-//        Intent(Constant.BROADCAST_PROGRESS).apply {
-//            setPackage(packageName)
-//            putExtra("currentPosition", currentPosition)
-//            putExtra("duration", duration)
-//            sendBroadcast(this)
-//        }
-//    }
-
     private fun setUpView() {
         songList.clear()
         songList.addAll(SongUtils.getSongsFromDevice(contentResolver))
@@ -522,7 +422,7 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
     private fun initializeService(autoPlay: Boolean = false) {
         Intent(this, MusicService::class.java).apply {
             action = Constant.ACTION_INIT_SERVICE
-            putExtra("songList", songList)
+            putParcelableArrayListExtra("songList", songList)
             putExtra("currentIndex", currentSongIndex)
             putExtra("autoPlay", autoPlay)
             startService(this)
@@ -584,8 +484,20 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
 
         currentSongIndex = position
         currentSong = songList[position]
-        updatePlaybackState(true)
-        initializeService(true)
+
+        Intent(this, MusicService::class.java).apply {
+            action = Constant.ACTION_INIT_SERVICE
+            putParcelableArrayListExtra("songList", songList)
+            putExtra("currentIndex", position)
+            putExtra("autoPlay", true)
+            startService(this)
+        }
+
+        if (!isBound) {
+            Intent(this, MusicService::class.java).also { intent ->
+                bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            }
+        }
     }
 
     private fun registerVolumeObserver() {
@@ -608,10 +520,87 @@ class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListen
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateDeviceVolume()
+        registerReceivers()
+        registerVolumeObserver()
+        startVolumeUpdates()
+
+        Intent(this, MusicService::class.java).also { intent ->
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
+
+        handler = Handler(Looper.getMainLooper())
+        startProgressUpdates()
+
+        Intent(this, MusicService::class.java).apply {
+            action = Constant.BROADCAST_PLAYBACK_STATE
+            startService(this)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        try {
+            unregisterReceiver(volumeReceiver)
+            unregisterReceiver(playbackReceiver)
+            unregisterVolumeObserver()
+            stopVolumeUpdates()
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+        }
+        stopThumbnailRotation()
+        handler.removeCallbacksAndMessages(null)
+        if (isBound) {
+            unbindService(serviceConnection)
+            isBound = false
+        }
+    }
+
+    private fun startVolumeUpdates() {
+        volumeHandler.post(volumeRunnable)
+    }
+
+    private fun stopVolumeUpdates() {
+        volumeHandler.removeCallbacks(volumeRunnable)
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private fun registerReceivers() {
+        try {
+            val volumeFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+
+            val playbackFilter = IntentFilter().apply {
+                addAction(Constant.BROADCAST_PLAYBACK_STATE)
+                addAction(Constant.BROADCAST_PROGRESS)
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(
+                    volumeReceiver,
+                    volumeFilter,
+                    Context.RECEIVER_EXPORTED
+                )
+
+                registerReceiver(
+                    playbackReceiver,
+                    playbackFilter,
+                    Context.RECEIVER_NOT_EXPORTED
+                )
+            } else {
+                registerReceiver(volumeReceiver, volumeFilter)
+                registerReceiver(playbackReceiver, playbackFilter)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         stopService(Intent(this, MusicService::class.java))
-//        musicService?.onDestroy()
+        musicService?.onDestroy()
         stopService(intent)
         StopForegroundFlags()
     }

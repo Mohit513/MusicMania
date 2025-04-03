@@ -10,23 +10,19 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivMenu"
-        android:layout_width="@dimen/_48sdp"
-        android:layout_height="@dimen/_48sdp"
-        android:layout_margin="@dimen/_20sdp"
-        android:backgroundTint="@color/shark"
-        android:background="@drawable/white_shadow_background"
-        android:elevation="@dimen/_6sdp"
-        android:scaleType="center"
-        android:padding="@dimen/_2sdp"
-        android:layout_marginTop="@dimen/_24sdp"
-        android:tint="@color/rolling_stone"
+        android:layout_width="@dimen/_45sdp"
+        android:layout_height="@dimen/_45sdp"
+        android:layout_margin="@dimen/_16sdp"
+        android:scaleType="fitCenter"
+        android:padding="@dimen/_4sdp"
+        android:scaleX="2"
+        android:scaleY="2"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/tvVolumePercentage"
         app:layout_constraintBottom_toBottomOf="@id/tvVolumePercentage"
-        app:shapeAppearance="@style/circle_image_view"
-        app:srcCompat="@drawable/ic_menu"
+        app:srcCompat="@drawable/ic_more"
         app:strokeColor="@color/mako_5"
-        app:strokeWidth="@dimen/_1sdp" />
+        app:strokeWidth="0dp" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivSongThumbnail"
@@ -34,10 +30,11 @@
         android:layout_height="@dimen/_245sdp"
         android:layout_margin="@dimen/_32sdp"
         android:layout_marginVertical="@dimen/_14sdp"
+        android:background="@drawable/white_shadow_background"
         android:padding="@dimen/_2sdp"
         android:scaleType="center"
-        android:background="@drawable/white_shadow_background"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ivMenu"
         app:shapeAppearance="@style/circle_image_view"
@@ -49,7 +46,7 @@
         android:id="@+id/layoutSongName"
         layout="@layout/layout_title_with_subtitle"
         android:layout_width="0dp"
-        android:layout_marginTop="@dimen/_4sdp"
+        android:layout_margin="@dimen/_4sdp"
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toStartOf="@id/tvVolumePercentage"
         app:layout_constraintStart_toEndOf="@id/ivMenu"
@@ -57,9 +54,9 @@
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvVolumePercentage"
-        android:layout_width="@dimen/_46sdp"
-        android:layout_height="@dimen/_46sdp"
-        android:layout_marginHorizontal="@dimen/_20sdp"
+        android:layout_width="@dimen/_45sdp"
+        android:layout_height="@dimen/_45sdp"
+        android:layout_marginHorizontal="@dimen/_16sdp"
         android:layout_marginTop="@dimen/_24sdp"
         android:paddingStart="@dimen/_4sdp"
         android:paddingEnd="@dimen/_1sdp"
@@ -68,11 +65,14 @@
         android:gravity="center"
         android:drawablePadding="@dimen/_2sdp"
         android:paddingHorizontal="@dimen/_2sdp"
+        android:outlineAmbientShadowColor="@color/white"
+        android:outlineSpotShadowColor="@color/white"
         android:textColor="@color/rolling_stone"
         app:drawableLeftCompat="@drawable/ic_volume"
         app:drawableTint="@color/rolling_stone"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:targetApi="p" />
 
     <include
         android:id="@+id/layoutSongProgress"
@@ -87,22 +87,19 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivPlayForward"
-        android:layout_width="@dimen/_68sdp"
-        android:layout_height="@dimen/_68sdp"
-        android:layout_margin="@dimen/_16sdp"
-        android:background="@color/pomegranate"
-        android:elevation="@dimen/_4sdp"
-        android:backgroundTint="@color/woodsmoke"
-        android:padding="@dimen/_2sdp"
-        android:scaleType="center"
-        android:tint="@color/rolling_stone"
+        android:layout_width="@dimen/_58sdp"
+        android:layout_height="@dimen/_58sdp"
+        android:layout_marginHorizontal="@dimen/_20sdp"
+        android:scaleType="centerInside"
+        android:padding="@dimen/_4sdp"
+        android:scaleY="2"
+        android:scaleX="2"
+        android:src="@drawable/previous"
+        app:srcCompat="@drawable/previous"
         app:layout_constraintBottom_toBottomOf="@id/ivSongPlay"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/ivSongPlay"
-        app:shapeAppearance="@style/circle_image_view"
-        app:srcCompat="@drawable/ic_backward"
-        app:strokeColor="@color/mako"
-        app:strokeWidth="@dimen/_2sdp" />
+         />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivSongPlay"
@@ -118,29 +115,27 @@
         app:layout_constraintBottom_toTopOf="@id/layoutOpenSongList"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        android:outlineSpotShadowColor="@color/pomegranate"
         app:shapeAppearance="@style/circle_image_view"
         app:srcCompat="@drawable/ic_play"
         app:strokeColor="@color/white"
-        app:strokeWidth="@dimen/_1sdp" />
+        app:strokeWidth="@dimen/_1sdp"
+        tools:targetApi="p" />
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivPlayback"
-        android:layout_width="@dimen/_68sdp"
-        android:layout_height="@dimen/_68sdp"
-        android:layout_margin="@dimen/_16sdp"
-        android:background="@color/pomegranate"
-        android:elevation="@dimen/_4sdp"
-        android:backgroundTint="@color/woodsmoke"
-        android:padding="@dimen/_2sdp"
-        android:scaleType="center"
-        android:tint="@color/rolling_stone"
+        android:layout_width="@dimen/_58sdp"
+        android:layout_height="@dimen/_58sdp"
+        android:layout_marginHorizontal="@dimen/_20sdp"
+        android:padding="@dimen/_4sdp"
+        android:scaleType="centerInside"
+        android:scaleY="2"
+        android:scaleX="2"
         app:layout_constraintBottom_toBottomOf="@id/ivSongPlay"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/ivSongPlay"
-        app:shapeAppearance="@style/circle_image_view"
-        app:srcCompat="@drawable/ic_forward"
-        app:strokeColor="@color/mako"
-        app:strokeWidth="@dimen/_2sdp" />
+        android:src="@drawable/drawble_next"
+        app:srcCompat="@drawable/drawble_next" />
 
     <LinearLayout
         android:id="@+id/layoutOpenSongList"

@@ -180,7 +180,8 @@
     <style name="circle_image_view">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
-        <item name="android:elevation">@dimen/_4sdp</item>
+        <item name="android:outlineSpotShadowColor" tools:targetApi="p">@color/white</item>
+        <item name="android:elevation">@dimen/_2sdp</item>
         <item name="background">@drawable/white_shadow_background</item>
     </style>
 

@@ -195,5 +195,7 @@ class SongListActivity : BaseActivity() {
         super.onDestroy()
         unbindMusicService()
         stopService(intent)
+//        onStop()
+//        stopService(Intent(this,MusicService::class.java))
     }
 }
