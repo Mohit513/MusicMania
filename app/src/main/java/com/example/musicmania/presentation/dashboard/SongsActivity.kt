@@ -407,11 +407,15 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
                 if (!isPressed) {
                     valueFrom = 0f
                     valueTo = duration.toFloat()
-                    value = currentPosition.toFloat()
+                    value = minOf(currentPosition.toFloat(), duration.toFloat())
                 }
             }
             updateCurrentTime(currentPosition)
             updateTotalTime(duration)
+            
+            if (currentPosition >= duration) {
+                sendServiceCommand(Constant.ACTION_NEXT)
+            }
         }
     }
 

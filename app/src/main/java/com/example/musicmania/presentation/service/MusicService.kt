@@ -347,32 +347,42 @@ class MusicService : Service() {
         mediaPlayer = MediaPlayer().apply {
             setDataSource(song.subTitle)
             prepare()
-            if (autoPlay || isPlaying) {
-                if (requestAudioFocus()) {
-                    start()
-                    this@MusicService.isPlaying = true
-                    // Create notification only when song starts playing
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        createNotificationChannel()
-                    }
-                    setupNotification()
-                    updateNotification()
+            
+            if (autoPlay && requestAudioFocus()) {
+                start()
+                this@MusicService.isPlaying = true
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    createNotificationChannel()
                 }
+                updateNotification()
             }
+            
             setOnCompletionListener {
                 playNextSong()
             }
+            
             setOnPreparedListener {
                 broadcastProgress(0, duration)
-                broadcastPlaybackState()
+                broadcastPlaybackState(isPlaying)
                 startProgressUpdates()
             }
+            
             setOnErrorListener { _, _, _ ->
-                broadcastPlaybackState()
+                broadcastPlaybackState(isPlaying)
                 true
             }
         }
-        broadcastPlaybackState()
+        broadcastPlaybackState(isPlaying)
+    }
+
+    private fun playNextSong() {
+        if (currentSongIndex < songList.size - 1) {
+            currentSongIndex++
+        } else {
+            currentSongIndex = 0
+        }
+        val nextSong = songList[currentSongIndex]
+        playSong(nextSong, true)
     }
 
     private fun togglePlayPause() {
@@ -382,12 +392,11 @@ class MusicService : Service() {
                 isPlaying = false
                 abandonAudioFocus()
                 startProgressUpdates()
-                updateNotification() // Just update existing notification
+                updateNotification()
             } else {
                 if (requestAudioFocus()) {
                     player.start()
                     isPlaying = true
-                    // Create notification when starting playback
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         createNotificationChannel()
                     }
@@ -398,12 +407,6 @@ class MusicService : Service() {
             }
             broadcastPlaybackState()
         }
-    }
-
-    private fun playNextSong() {
-        currentSongIndex = (currentSongIndex + 1) % songList.size
-        playSong(songList[currentSongIndex], true)
-        broadcastPlaybackState()
     }
 
     private fun playPreviousSong() {

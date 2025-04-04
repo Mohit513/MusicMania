@@ -35,7 +35,7 @@ class SearchSongListAdapter(
     @SuppressLint("NotifyDataSetChanged")
     override fun onBindViewHolder(holder: ViewHolder, @SuppressLint("RecyclerView") position: Int) {
         val song = songList[position]
-        val originalIndex = originalIndexMap[song] ?: position
+//        val originalIndex = originalIndexMap[song] ?: position
 
         holder.binding.apply {
             layoutItemSongList.tvTitle.text = song.title
@@ -62,18 +62,15 @@ class SearchSongListAdapter(
 
             root.setOnClickListener {
                 if (position != currentPlayingPosition) {
-                    // Reset previous selection
+
                     val oldPosition = currentPlayingPosition
                     currentPlayingPosition = position
                     isCurrentlyPlaying = true
-                    
-                    // Notify specific items that changed
+
                     if (oldPosition != -1) {
                         notifyItemChanged(oldPosition)
                     }
                     notifyItemChanged(position)
-                    
-                    // Call interface method with both positions
                     listener.onSongSelected(position, originalIndexMap[songList[position]] ?: position)
                 }
             }
