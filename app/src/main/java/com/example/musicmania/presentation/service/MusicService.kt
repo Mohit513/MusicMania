@@ -116,14 +116,14 @@ class MusicService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioFocusRequest =
                 AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN).setAudioAttributes(
-                        AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
-                    ).setAcceptsDelayedFocusGain(true)
+                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
+                ).setAcceptsDelayedFocusGain(true)
                     .setOnAudioFocusChangeListener(afChangeListener).build()
         }
 
-            createNotificationChannel()
-            setupNotification()
+//            createNotificationChannel()
+//            setupNotification()
 
         registerActivityLifecycleCallbacks()
     }
@@ -181,7 +181,11 @@ class MusicService : Service() {
                 seekTo(seekPosition)
             }
             Constant.BROADCAST_PLAYBACK_STATE -> {
-                broadcastPlaybackState()
+                // Only broadcast and update notification if actually playing
+                if (mediaPlayer?.isPlaying == true) {
+                    broadcastPlaybackState()
+                    createCustomNotification()
+                }
             }
             "ACTION_VOLUME_UP" -> adjustVolume(true)
             "ACTION_VOLUME_DOWN" -> adjustVolume(false)
@@ -308,34 +312,34 @@ class MusicService : Service() {
             mediaPlayer?.release()
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(currentSong?.subTitle)
-                prepare()
-                if (autoPlay) {
-                    if (requestAudioFocus()) {
-                        start()
+                setOnPreparedListener { mp ->
+                    if (autoPlay && requestAudioFocus()) {
+                        mp.start()
                         this@MusicService.isPlaying = true
+                        // Only create notification when actually playing
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            createNotificationChannel()
+                        }
+                        setupNotification()
+                        updateNotification()
                     }
+                    broadcastProgress(0, duration)
+                    broadcastPlaybackState()
                 }
                 setOnCompletionListener {
                     playNextSong()
-                }
-                setOnPreparedListener {
-                    broadcastProgress(0, duration)
-                    broadcastPlaybackState()
                 }
                 setOnErrorListener { _, _, _ ->
                     broadcastPlaybackState()
                     true
                 }
+                prepareAsync() // Use async preparation to avoid blocking
             }
             startProgressUpdates()
-            setupNotification()
-            updateNotification()
-            broadcastPlaybackState()
         }
     }
 
     private fun playSong(song: SongListDataModel, autoPlay: Boolean = false) {
-        // Update currentSongIndex based on the song being played
         currentSongIndex = songList.indexOfFirst { it.subTitle == song.subTitle }.takeIf { it != -1 } ?: currentSongIndex
         currentSong = song
         mediaPlayer?.release()
@@ -346,6 +350,12 @@ class MusicService : Service() {
                 if (requestAudioFocus()) {
                     start()
                     this@MusicService.isPlaying = true
+                    // Create notification only when song starts playing
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        createNotificationChannel()
+                    }
+                    setupNotification()
+                    updateNotification()
                 }
             }
             setOnCompletionListener {
@@ -361,8 +371,6 @@ class MusicService : Service() {
                 true
             }
         }
-        setupNotification() // Ensure notification is created
-        updateNotification()
         broadcastPlaybackState()
     }
 
@@ -373,18 +381,21 @@ class MusicService : Service() {
                 isPlaying = false
                 abandonAudioFocus()
                 startProgressUpdates()
-                createNotificationChannel()
-                setupNotification()
+                updateNotification() // Just update existing notification
             } else {
                 if (requestAudioFocus()) {
                     player.start()
                     isPlaying = true
-                    startProgressUpdates()
+                    // Create notification when starting playback
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        createNotificationChannel()
+                    }
                     setupNotification()
+                    updateNotification()
+                    startProgressUpdates()
                 }
             }
             broadcastPlaybackState()
-            updateNotification()
         }
     }
 
@@ -489,14 +500,14 @@ class MusicService : Service() {
 //        }
 //    }
 
-    fun setVolume(volume: Int) {
+    private fun setVolume(volume: Int) {
         currentVolume = volume.coerceIn(0, 100)
         val volumeFloat = currentVolume / 100f
         mediaPlayer?.setVolume(volumeFloat, volumeFloat)
         broadcastVolumeChange()
     }
 
-    fun adjustVolume(increase: Boolean) {
+    private fun adjustVolume(increase: Boolean) {
         val step = 1 // Adjust volume by 5%
         val newVolume = if (increase) {
             (currentVolume + step).coerceAtMost(100)
@@ -514,26 +525,39 @@ class MusicService : Service() {
     }
 
     fun updateNotification() {
-        if (isForegroundService && remoteViews != null) {
-            remoteViews?.apply {
-                setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
-                setTextViewText(
-                    R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist"
-                )
-                setImageViewResource(
-                    R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play
-                )
-                setImageViewResource(
-                    R.id.notification_play_pause,
-                    if (mediaPlayer?.isPlaying == true) R.drawable.ic_pause else R.drawable.ic_play
-                )
-                mediaPlayer?.let {
-                    setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
-                    broadcastPlaybackState(it.isPlaying)
+        if (isForegroundService && remoteViews != null && mediaPlayer != null) {
+            try {
+                remoteViews?.apply {
+                    setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
+                    setTextViewText(
+                        R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist"
+                    )
+                    setImageViewResource(
+                        R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play
+                    )
+                    val isPlaying = try {
+                        mediaPlayer?.isPlaying == true
+                    } catch (e: IllegalStateException) {
+                        false
+                    }
+                    setImageViewResource(
+                        R.id.notification_play_pause,
+                        if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                    )
+                    mediaPlayer?.let {
+                        try {
+                            setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
+                            broadcastPlaybackState(isPlaying)
+                        } catch (e: IllegalStateException) {
+                            // MediaPlayer not ready yet
+                        }
+                    }
                 }
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager?.notify(Constant.NOTIFICATION_ID, notificationBuilder?.build())
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager?.notify(Constant.NOTIFICATION_ID, notificationBuilder?.build())
         }
     }
 
@@ -591,6 +615,6 @@ class MusicService : Service() {
         handler.removeCallbacksAndMessages(null)
         mediaPlayer = null
         stopSelf()
-        stopService(Intent(this,MusicService::class.java))
+//        stopService(Intent(this,MusicService::class.java))
     }
 }

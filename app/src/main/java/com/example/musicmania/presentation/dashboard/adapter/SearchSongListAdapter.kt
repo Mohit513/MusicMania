@@ -40,48 +40,57 @@ class SearchSongListAdapter(
             layoutItemSongList.tvTitle.text = song.title
             layoutItemSongList.tvSubTitle.text = song.artist
 
+            // Check if this item is currently playing
+            val isThisItemPlaying = position == currentPlayingPosition && isCurrentlyPlaying
+
             ivPlayAndPause.setImageResource(
-                when {
-                    originalIndex == currentPlayingPosition && isCurrentlyPlaying -> R.drawable.ic_pause
-                    else -> R.drawable.ic_play
-                }
+                if (isThisItemPlaying) R.drawable.ic_pause else R.drawable.ic_play
             )
 
             ivPlayAndPause.setBackgroundColor(
-                when {
-                    originalIndex == currentPlayingPosition && isCurrentlyPlaying -> ContextCompat.getColor(context, R.color.pomegranate)
-                    else -> ContextCompat.getColor(context, R.color.woodsmoke)
-                }
+                ContextCompat.getColor(context,
+                    if (isThisItemPlaying) R.color.pomegranate else R.color.woodsmoke
+                )
             )
 
             layoutItemSongList.tvTitle.setTextColor(
-                when {
-                    originalIndex == currentPlayingPosition && isCurrentlyPlaying -> ContextCompat.getColor(context, R.color.pomegranate)
-                    else -> ContextCompat.getColor(context, R.color.dusty_gray)
-                }
+                ContextCompat.getColor(context,
+                    if (isThisItemPlaying) R.color.pomegranate else R.color.dusty_gray
+                )
             )
 
             root.setOnClickListener {
-                val previousPlayingPosition = currentPlayingPosition;
-                currentPlayingPosition = originalIndex
-                isCurrentlyPlaying = true
-                onItemClick(position)
-                if (previousPlayingPosition != -1){
-                    notifyItemChanged(originalIndexMap.values.indexOf(previousPlayingPosition))
+                if (position != currentPlayingPosition) {
+                    // Reset previous selection
+                    val oldPosition = currentPlayingPosition
+                    currentPlayingPosition = position
+                    isCurrentlyPlaying = true
+                    
+                    // Notify specific items that changed
+                    if (oldPosition != -1) {
+                        notifyItemChanged(oldPosition)
+                    }
+                    notifyItemChanged(position)
+                    
+                    onItemClick(position)
                 }
-                notifyItemChanged(position)
             }
         }
     }
 
     @SuppressLint("NotifyDataSetChanged")
     fun updatePlayingState(originalIndex: Int, isPlaying: Boolean) {
-        val previousPlayingPosition = currentPlayingPosition
-        currentPlayingPosition = originalIndex
+        val newPosition = songList.indexOfFirst { originalIndexMap[it] == originalIndex }
+
+        val oldPosition = currentPlayingPosition
+        currentPlayingPosition = newPosition
         isCurrentlyPlaying = isPlaying
-        if (previousPlayingPosition != -1){
-            notifyItemChanged(originalIndexMap.values.indexOf(previousPlayingPosition))
+
+        if (oldPosition != -1 && oldPosition < itemCount) {
+            notifyItemChanged(oldPosition)
         }
-        notifyItemChanged(originalIndexMap.values.indexOf(originalIndex))
+        if (newPosition != -1 && newPosition < itemCount) {
+            notifyItemChanged(newPosition)
+        }
     }
 }

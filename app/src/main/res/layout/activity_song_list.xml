@@ -69,6 +69,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/layoutSearchBox"
-        tools:itemCount="10"
+        tools:itemCount="2"
         tools:listitem="@layout/item_songs_list" />
 </androidx.constraintlayout.widget.ConstraintLayout>

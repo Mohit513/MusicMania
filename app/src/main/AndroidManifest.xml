@@ -29,7 +29,6 @@
             android:name=".presentation.dashboard.SongsActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:taskAffinity=""
             android:excludeFromRecents="false">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

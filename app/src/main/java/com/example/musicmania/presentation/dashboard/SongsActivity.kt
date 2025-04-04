@@ -39,6 +39,7 @@ import com.example.musicmania.utils.SongUtils
 import com.google.android.material.slider.Slider
 
 open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListListener {
+
     private lateinit var binding: ActivitySongsBinding
     private lateinit var audioManager: AudioManager
     private lateinit var handler: Handler
@@ -179,6 +180,8 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     override fun onBackPressed() {
         super.onBackPressed()
         moveTaskToBack(true)
+        onBackPressedDispatcher.onBackPressed()
+
     }
 
     private fun checkAndRequestPermissions() {
@@ -349,9 +352,9 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
 
     private fun showSongListBottomSheet() {
         SongListBottomSheetFragment(
-            songList,
-            currentSongIndex,
-            isPlaying
+            songList =   songList,
+            currentSongIndex =   currentSongIndex,
+            isPlaying =   isPlaying
         ).show(supportFragmentManager, Constant.TAG)
     }
 
@@ -387,10 +390,12 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     private fun updateSongInfo(song: SongListDataModel?) {
         song?.let {
             binding.apply {
-                layoutSongName.tvTitle.text = it.title
-                layoutSongName.tvSubTitle.text = it.artist
-                layoutSongName.tvSubTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
-                layoutSongName.tvTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                layoutSongName.apply {
+                    tvTitle.text = it.title
+                    tvSubTitle.text = it.artist
+                    tvSubTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                    tvTitle.textAlignment = View.TEXT_ALIGNMENT_CENTER
+                }
                 ivSongThumbnail.setImageResource(it.songThumbnail ?: R.drawable.app_logo)
                 ivSongPlay.setImageResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             }
@@ -422,7 +427,7 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     private fun initializeService(autoPlay: Boolean = false) {
         Intent(this, MusicService::class.java).apply {
             action = Constant.ACTION_INIT_SERVICE
-            putParcelableArrayListExtra("songList", songList)
+            putExtra("songList", songList)
             putExtra("currentIndex", currentSongIndex)
             putExtra("autoPlay", autoPlay)
             startService(this)
@@ -482,12 +487,16 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     override fun onSelectSongItem(position: Int) {
         if (position < 0 || position >= songList.size) return
 
+        // Reset all songs' playing state
+        songList.forEach { it.isPlaying = false }
+
         currentSongIndex = position
         currentSong = songList[position]
+        currentSong.isPlaying = true
 
         Intent(this, MusicService::class.java).apply {
             action = Constant.ACTION_INIT_SERVICE
-            putParcelableArrayListExtra("songList", songList)
+            putExtra("songList", songList)
             putExtra("currentIndex", position)
             putExtra("autoPlay", true)
             startService(this)
@@ -596,12 +605,15 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
             e.printStackTrace()
         }
     }
-
+    //check out stop shelf option
     override fun onDestroy() {
         super.onDestroy()
-        stopService(Intent(this, MusicService::class.java))
-        musicService?.onDestroy()
-        stopService(intent)
-        StopForegroundFlags()
+        // Don't stop service on activity destroy to keep music playing
+        if (isFinishing) {
+            stopService(Intent(this, MusicService::class.java))
+            musicService?.onDestroy()
+            stopService(intent)
+            StopForegroundFlags()
+        }
     }
 }
