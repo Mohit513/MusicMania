@@ -21,10 +21,8 @@ import android.provider.Settings
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsetsController
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.core.app.ServiceCompat.StopForegroundFlags
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import com.example.musicmania.Constant
@@ -178,10 +176,11 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
+        musicService?.apply {
+            createNotificationChannel()
+            startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+        }
         moveTaskToBack(true)
-        onBackPressedDispatcher.onBackPressed()
-
     }
 
     private fun checkAndRequestPermissions() {
@@ -352,9 +351,9 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
 
     private fun showSongListBottomSheet() {
         SongListBottomSheetFragment(
-            songList =   songList,
-            currentSongIndex =   currentSongIndex,
-            isPlaying =   isPlaying
+            songList = songList,
+            currentSongIndex = currentSongIndex,
+            isPlaying = isPlaying
         ).show(supportFragmentManager, Constant.TAG)
     }
 
@@ -561,6 +560,14 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
         }
         stopThumbnailRotation()
         handler.removeCallbacksAndMessages(null)
+
+        if (isPlaying || musicService?.mediaPlayer?.isPlaying == true) {
+            musicService?.apply {
+                createNotificationChannel()
+                startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+            }
+        }
+
         if (isBound) {
             unbindService(serviceConnection)
             isBound = false
@@ -605,15 +612,27 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
             e.printStackTrace()
         }
     }
-    //check out stop shelf option
+
     override fun onDestroy() {
-        super.onDestroy()
-        // Don't stop service on activity destroy to keep music playing
-        if (isFinishing) {
-            stopService(Intent(this, MusicService::class.java))
-            musicService?.onDestroy()
-            stopService(intent)
-            StopForegroundFlags()
+        try {
+            if (isFinishing) {
+                if (!isPlaying && musicService?.mediaPlayer?.isPlaying != true) {
+                    stopService(Intent(this, MusicService::class.java))
+                } else {
+                    musicService?.apply {
+                        createNotificationChannel()
+                        startForeground(
+                            Constant.NOTIFICATION_ID,
+                            createCustomNotification().build()
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+        musicService?.mediaPlayer?.release()
+        stopService(intent)
+        super.onDestroy()
     }
 }

@@ -8,13 +8,14 @@ import android.view.ViewGroup
 import com.example.musicmania.databinding.FragmentSongListBottomSheetBinding
 import com.example.musicmania.presentation.bottom_sheet.adapter.SongListAdapter
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
+import com.example.musicmania.presentation.interfaces.SongSelectionListener
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class SongListBottomSheetFragment(
     private val songList: ArrayList<SongListDataModel>,
     private val currentSongIndex: Int,
     private val isPlaying: Boolean
-) : BottomSheetDialogFragment() {
+) : BottomSheetDialogFragment(), SongSelectionListener {
 
     private lateinit var binding: FragmentSongListBottomSheetBinding
 
@@ -49,16 +50,22 @@ class SongListBottomSheetFragment(
     }
 
     private fun setupRecyclerView() {
-        songListAdapter = SongListAdapter(context = requireContext(),songList = songList) { position ->
-            songListListener?.onSelectSongItem(position)
-            dismiss()
-        }
+        songListAdapter = SongListAdapter(
+            context = requireContext(),
+            songList = songList,
+            listener = this
+        )
         
         binding.recyclerViewBottomList.apply {
             adapter = songListAdapter
         }
 
         songListAdapter.updatePlayingState(currentSongIndex, isPlaying)
+    }
+
+    override fun onSongSelected(position: Int, originalIndex: Int) {
+        songListListener?.onSelectSongItem(position)
+        dismiss()
     }
 
 

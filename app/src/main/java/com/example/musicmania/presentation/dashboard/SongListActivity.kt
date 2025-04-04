@@ -20,9 +20,10 @@ import com.example.musicmania.base.BaseActivity
 import com.example.musicmania.databinding.ActivitySongListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
 import com.example.musicmania.presentation.dashboard.adapter.SearchSongListAdapter
+import com.example.musicmania.presentation.interfaces.SongSelectionListener
 import com.example.musicmania.presentation.service.MusicService
 
-class SongListActivity : BaseActivity() {
+class SongListActivity : BaseActivity(), SongSelectionListener {
 
     private var songList: ArrayList<SongListDataModel> = arrayListOf()
     private var commonSearchList: ArrayList<SongListDataModel> = arrayListOf()
@@ -80,9 +81,12 @@ class SongListActivity : BaseActivity() {
         songList.forEachIndexed { index, song ->
             originalIndexMap[song] = index
         }
-        songListAdapter = SearchSongListAdapter(applicationContext, commonSearchList, { position ->
-            onSongItemClicked(position)
-        }, originalIndexMap)
+        songListAdapter = SearchSongListAdapter(
+            context = applicationContext,
+            songList = commonSearchList,
+            listener = this,
+            originalIndexMap = originalIndexMap
+        )
 
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@SongListActivity)
@@ -104,7 +108,7 @@ class SongListActivity : BaseActivity() {
     }
 
 
-    private fun onSongItemClicked(position: Int) {
+    override fun onSongSelected(position: Int, originalIndex: Int) {
         val clickedSong = commonSearchList[position]
         val songIndexInOriginalList = songList.indexOf(clickedSong)
         val previousPlayingPosition = currentSongIndex
@@ -193,7 +197,7 @@ class SongListActivity : BaseActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unbindMusicService()
+//        unbindMusicService()
         stopService(intent)
 //        onStop()
 //        stopService(Intent(this,MusicService::class.java))

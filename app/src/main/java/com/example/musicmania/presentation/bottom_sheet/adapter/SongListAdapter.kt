@@ -9,11 +9,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.musicmania.R
 import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
+import com.example.musicmania.presentation.interfaces.SongSelectionListener
 
 class SongListAdapter(
     private val context: Context,
     private val songList: ArrayList<SongListDataModel>,
-    private val onItemClick: (Int) -> Unit
+    private val listener: SongSelectionListener
 ) : RecyclerView.Adapter<SongListAdapter.ViewHolder>() {
 
     private var currentPlayingPosition = -1
@@ -59,10 +60,18 @@ class SongListAdapter(
                 }
             )
             root.setOnClickListener {
-                onItemClick(position)
-                currentPlayingPosition = position
-                isCurrentlyPlaying = true
-                notifyDataSetChanged()
+                if (position != currentPlayingPosition) {
+                    val oldPosition = currentPlayingPosition
+                    currentPlayingPosition = position
+                    isCurrentlyPlaying = true
+                    
+                    if (oldPosition != -1) {
+                        notifyItemChanged(oldPosition)
+                    }
+                    notifyItemChanged(position)
+                    
+                    listener.onSongSelected(position, position)
+                }
             }
         }
     }

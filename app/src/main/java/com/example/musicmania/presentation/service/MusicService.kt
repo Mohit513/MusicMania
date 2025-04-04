@@ -229,7 +229,7 @@ class MusicService : Service() {
     }
 
     @SuppressLint("InflateParams", "RemoteViewLayout")
-    private fun createCustomNotification(): NotificationCompat.Builder {
+    fun createCustomNotification(): NotificationCompat.Builder {
         val intent = Intent(this, SongsActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("currentSongIndex", currentSongIndex)
@@ -286,6 +286,7 @@ class MusicService : Service() {
             .setCustomContentView(remoteViews).setContentIntent(pendingIntent)
             .setPriority(START_STICKY).setAllowSystemGeneratedContextualActions(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_TRANSPORT).setShowWhen(false)
             .setAutoCancel(false).setOnlyAlertOnce(true).setOngoing(true)
@@ -604,17 +605,34 @@ class MusicService : Service() {
     }
 
     override fun stopService(name: Intent?): Boolean {
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        // Only stop if no music is playing
+        if (!isPlaying && mediaPlayer?.isPlaying != true) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        } else {
+            // Keep service in foreground with notification
+            createNotificationChannel()
+            startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+            updateNotification()
+        }
         return super.stopService(name)
     }
 
     override fun onDestroy() {
+        // Only cleanup if no music is playing
+        if (!isPlaying && mediaPlayer?.isPlaying != true) {
+            abandonAudioFocus()
+            handler.removeCallbacksAndMessages(null)
+            mediaPlayer?.release()
+            mediaPlayer = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        } else {
+            // Keep service running with notification
+            createNotificationChannel()
+            startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+            updateNotification()
+        }
         super.onDestroy()
-        abandonAudioFocus()
-        handler.removeCallbacksAndMessages(null)
-        mediaPlayer = null
-        stopSelf()
-//        stopService(Intent(this,MusicService::class.java))
     }
 }

@@ -9,12 +9,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.musicmania.R
 import com.example.musicmania.databinding.ItemSongsListBinding
 import com.example.musicmania.presentation.bottom_sheet.model.SongListDataModel
+import com.example.musicmania.presentation.interfaces.SongSelectionListener
 
 
 class SearchSongListAdapter(
     private val context: Context,
     private val songList: ArrayList<SongListDataModel>,
-    private val onItemClick: (Int) -> Unit,
+    private val listener: SongSelectionListener,
     private val originalIndexMap: MutableMap<SongListDataModel, Int>
 ) : RecyclerView.Adapter<SearchSongListAdapter.ViewHolder>() {
 
@@ -72,7 +73,8 @@ class SearchSongListAdapter(
                     }
                     notifyItemChanged(position)
                     
-                    onItemClick(position)
+                    // Call interface method with both positions
+                    listener.onSongSelected(position, originalIndexMap[songList[position]] ?: position)
                 }
             }
         }

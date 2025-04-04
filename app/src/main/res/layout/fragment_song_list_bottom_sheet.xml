@@ -13,13 +13,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <View
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/divider"
-            android:layout_width="@dimen/_40sdp"
-            android:layout_height="@dimen/_3sdp"
-            android:layout_marginVertical="@dimen/_12sdp"
-            android:background="@color/woodsmoke"
-            android:elevation="-12dp"
+            android:layout_width="@dimen/_50sdp"
+            android:layout_height="@dimen/_6sdp"
+            android:layout_marginVertical="@dimen/_10sdp"
+            android:src="@drawable/divider"
+            android:scaleY="1"
             app:layout_constraintBottom_toTopOf="@id/recyclerViewBottomList"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
