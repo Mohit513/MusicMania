@@ -120,11 +120,9 @@ class MusicService : Service() {
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
                 ).setAcceptsDelayedFocusGain(true)
                     .setOnAudioFocusChangeListener(afChangeListener).build()
+            createNotificationChannel()
         }
-
-//            createNotificationChannel()
-//            setupNotification()
-
+        setupNotification()
         registerActivityLifecycleCallbacks()
     }
 
@@ -609,27 +607,20 @@ class MusicService : Service() {
         if (!isPlaying && mediaPlayer?.isPlaying != true) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
-        } else {
-            createNotificationChannel()
-            startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
-            updateNotification()
         }
         return super.stopService(name)
     }
 
     override fun onDestroy() {
-        if (!isPlaying && mediaPlayer?.isPlaying != true) {
+
             abandonAudioFocus()
             handler.removeCallbacksAndMessages(null)
             mediaPlayer?.release()
             mediaPlayer = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
-        } else {
-            createNotificationChannel()
-            startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
-            updateNotification()
-        }
+
+
         super.onDestroy()
     }
 }

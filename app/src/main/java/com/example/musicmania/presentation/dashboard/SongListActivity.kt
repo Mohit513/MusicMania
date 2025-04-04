@@ -122,9 +122,9 @@ class SongListActivity : BaseActivity(), SongSelectionListener {
             }
             startService(intent)
             isPlaying = true
-            if (previousPlayingPosition != -1){
-                songListAdapter.notifyItemChanged(originalIndexMap.values.indexOf(previousPlayingPosition))
-            }
+//            if (previousPlayingPosition != -1){
+//                songListAdapter.notifyItemChanged(originalIndexMap.values.indexOf(previousPlayingPosition))
+//            }
             songListAdapter.notifyItemChanged(originalIndexMap.values.indexOf(currentSongIndex))
             musicService?.updateNotificationFromActivity()
             musicService?.updateNotification()
