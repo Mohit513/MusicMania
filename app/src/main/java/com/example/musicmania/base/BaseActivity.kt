@@ -6,6 +6,8 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Build.VERSION
 import android.os.Bundle
+import android.view.View
+import android.view.WindowInsetsController
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -19,21 +21,16 @@ import com.example.musicmania.presentation.service.MusicService
 open class BaseActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.light(
-                    ContextCompat.getColor(
-                        this,
-                        R.color.color_primary
-                    ), ContextCompat.getColor(this, R.color.color_primary)
-                ),
-                navigationBarStyle = SystemBarStyle.light(
-                    ContextCompat.getColor(
-                        this,
-                        R.color.color_primary
-                    ), ContextCompat.getColor(this, R.color.color_primary)
-                )
-            )
+        enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.apply {
+                hide(android.view.WindowInsets.Type.statusBars())
+                systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN)
         }
 
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED

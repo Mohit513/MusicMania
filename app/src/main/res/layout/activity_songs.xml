@@ -61,7 +61,7 @@
         android:paddingStart="@dimen/_4sdp"
         android:paddingEnd="@dimen/_1sdp"
         android:background="@drawable/rounded_circular_view"
-        android:elevation="@dimen/_4sdp"
+        android:elevation="@dimen/_8sdp"
         android:gravity="center"
         android:drawablePadding="@dimen/_2sdp"
         android:paddingHorizontal="@dimen/_2sdp"

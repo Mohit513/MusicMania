@@ -153,7 +153,8 @@ class MusicService : Service() {
 
             override fun onActivityStopped(activity: Activity) {}
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-            override fun onActivityDestroyed(activity: Activity) {}
+            override fun onActivityDestroyed(activity: Activity) {
+            }
         })
     }
 
@@ -177,25 +178,24 @@ class MusicService : Service() {
             Constant.ACTION_NEXT -> playNextSong()
             Constant.ACTION_PREVIOUS -> playPreviousSong()
             Constant.ACTION_SEEK -> {
-                val seekPosition = intent.getIntExtra("seekPosition", 0)
+                val seekPosition = intent.getIntExtra(Constant.SEEK_POSITION, 0)
                 seekTo(seekPosition)
             }
             Constant.BROADCAST_PLAYBACK_STATE -> {
-                // Only broadcast and update notification if actually playing
                 if (mediaPlayer?.isPlaying == true) {
                     broadcastPlaybackState()
                     createCustomNotification()
                 }
             }
-            "ACTION_VOLUME_UP" -> adjustVolume(true)
-            "ACTION_VOLUME_DOWN" -> adjustVolume(false)
+            Constant.ACTION_VOLUME_UP -> adjustVolume(true)
+            Constant.ACTION_VOLUME_DOWN -> adjustVolume(false)
             Constant.ACTION_INIT_SERVICE -> {
-                songList = intent.getParcelableArrayListExtra("songList") ?: ArrayList()
-                currentSongIndex = intent.getIntExtra("currentIndex", 0)
-                val autoPlay = intent.getBooleanExtra("autoPlay", false)
+                songList = intent.getParcelableArrayListExtra(Constant.SONG_LIST) ?: ArrayList()
+                currentSongIndex = intent.getIntExtra(Constant.CURRENT_INDEX, 0)
+                val autoPlay = intent.getBooleanExtra(Constant.AUTO_PLAY, false)
                 initializeService(autoPlay)
             }
-            "ACTION_STOP" -> {
+            Constant.ACTION_STOP -> {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -232,18 +232,17 @@ class MusicService : Service() {
     fun createCustomNotification(): NotificationCompat.Builder {
         val intent = Intent(this, SongsActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("currentSongIndex", currentSongIndex)
-            putExtra("isPlaying", mediaPlayer?.isPlaying ?: false)
-            putExtra("fromNotification", true)
+            putExtra(Constant.CURRENT_SONG_INDEX, currentSongIndex)
+            putExtra(Constant.IS_PLAYING, mediaPlayer?.isPlaying ?: false)
+            putExtra(Constant.FROM_NOTIFICATION, true)
         }
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        Log.d("songIndex",currentSongIndex.toString())
 //        val backgroundImage: Bitmap? = BitmapFactory.decodeResource(resources, R.drawable.app_logo)
         remoteViews?.apply {
-            setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
-            setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist")
+            setTextViewText(R.id.notification_song_title, currentSong?.title ?: getString(R.string.unknown))
+            setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: getString(R.string.unknown_artist))
             setImageViewResource(R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play)
             setImageViewResource(
                 R.id.notification_play_pause,
@@ -317,7 +316,6 @@ class MusicService : Service() {
                     if (autoPlay && requestAudioFocus()) {
                         mp.start()
                         this@MusicService.isPlaying = true
-                        // Only create notification when actually playing
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             createNotificationChannel()
                         }
@@ -334,7 +332,7 @@ class MusicService : Service() {
                     broadcastPlaybackState()
                     true
                 }
-                prepareAsync() // Use async preparation to avoid blocking
+                prepareAsync()
             }
             startProgressUpdates()
         }
@@ -468,16 +466,16 @@ class MusicService : Service() {
             action = Constant.BROADCAST_PLAYBACK_STATE
             `package` = packageName
             flags = Intent.FLAG_RECEIVER_REGISTERED_ONLY
-            putExtra("isPlaying", mediaPlayer?.isPlaying ?: false)
-            putExtra("currentIndex", currentSongIndex)
-            putExtra("title", currentSong?.title)
-            putExtra("artist", currentSong?.artist)
-            putExtra("thumbnail", currentSong?.songThumbnail)
-            putExtra("subTitle", currentSong?.subTitle)
-            putExtra("icon", currentSong?.icon)
-            putExtra("duration", mediaPlayer?.duration ?: 0)
-            putExtra("currentPosition", mediaPlayer?.currentPosition ?: 0)
-            putExtra("rotation", rotation)
+            putExtra(Constant.IS_PLAYING, mediaPlayer?.isPlaying ?: false)
+            putExtra(Constant.CURRENT_INDEX, currentSongIndex)
+            putExtra(Constant.TITLE, currentSong?.title)
+            putExtra(Constant.ARTIST, currentSong?.artist)
+            putExtra(Constant.THUMBNAIL, currentSong?.songThumbnail)
+            putExtra(Constant.SUBTITLE, currentSong?.subTitle)
+            putExtra(Constant.ICON, currentSong?.icon)
+            putExtra(Constant.DURATION, mediaPlayer?.duration ?: 0)
+            putExtra(Constant.CURRENT_POSITION, mediaPlayer?.currentPosition ?: 0)
+            putExtra(Constant.ROTATION, rotation)
             sendBroadcast(this)
         }
     }
@@ -487,8 +485,8 @@ class MusicService : Service() {
             action = Constant.BROADCAST_PROGRESS
             `package` = packageName
             flags = Intent.FLAG_RECEIVER_REGISTERED_ONLY
-            putExtra("currentPosition", currentPosition)
-            putExtra("duration", duration)
+            putExtra(Constant.CURRENT_POSITION, currentPosition)
+            putExtra(Constant.DURATION, duration)
             sendBroadcast(this)
         }
     }
@@ -523,7 +521,7 @@ class MusicService : Service() {
 
     private fun broadcastVolumeChange() {
         val intent = Intent("VOLUME_CHANGED").apply {
-            putExtra("volume", currentVolume)
+            putExtra(Constant.VOLUME, currentVolume)
         }
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
@@ -532,9 +530,9 @@ class MusicService : Service() {
         if (isForegroundService && remoteViews != null && mediaPlayer != null) {
             try {
                 remoteViews?.apply {
-                    setTextViewText(R.id.notification_song_title, currentSong?.title ?: "Unknown")
+                    setTextViewText(R.id.notification_song_title, currentSong?.title ?: getString(R.string.unknown))
                     setTextViewText(
-                        R.id.notification_song_artist, currentSong?.artist ?: "Unknown Artist"
+                        R.id.notification_song_artist, currentSong?.artist ?: getString(R.string.unknown_artist)
                     )
                     setImageViewResource(
                         R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play
@@ -608,12 +606,10 @@ class MusicService : Service() {
     }
 
     override fun stopService(name: Intent?): Boolean {
-        // Only stop if no music is playing
         if (!isPlaying && mediaPlayer?.isPlaying != true) {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         } else {
-            // Keep service in foreground with notification
             createNotificationChannel()
             startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
             updateNotification()
@@ -622,7 +618,6 @@ class MusicService : Service() {
     }
 
     override fun onDestroy() {
-        // Only cleanup if no music is playing
         if (!isPlaying && mediaPlayer?.isPlaying != true) {
             abandonAudioFocus()
             handler.removeCallbacksAndMessages(null)
@@ -631,7 +626,6 @@ class MusicService : Service() {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         } else {
-            // Keep service running with notification
             createNotificationChannel()
             startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
             updateNotification()

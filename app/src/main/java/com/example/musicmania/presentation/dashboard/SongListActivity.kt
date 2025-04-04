@@ -52,8 +52,8 @@ class SongListActivity : BaseActivity(), SongSelectionListener {
     private val playbackStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == Constant.BROADCAST_PLAYBACK_STATE) {
-                val isPlaying = intent.getBooleanExtra("isPlaying", false)
-                val currentIndex = intent.getIntExtra("currentIndex", 0)
+                val isPlaying = intent.getBooleanExtra(Constant.IS_PLAYING, false)
+                val currentIndex = intent.getIntExtra(Constant.CURRENT_INDEX, 0)
 
                 this@SongListActivity.currentSongIndex = currentIndex
                 this@SongListActivity.isPlaying = isPlaying
@@ -68,10 +68,10 @@ class SongListActivity : BaseActivity(), SongSelectionListener {
         enableEdgeToEdge()
         setContentView(binding.root)
 
-        songList = intent.getParcelableArrayListExtra("songList") ?: arrayListOf()
+        songList = intent.getParcelableArrayListExtra(Constant.SONG_LIST) ?: arrayListOf()
         commonSearchList.addAll(songList)
-        currentSongIndex = intent.getIntExtra("currentSongIndex", 0)
-        isPlaying = intent.getBooleanExtra("isPlaying", true)
+        currentSongIndex = intent.getIntExtra(Constant.CURRENT_SONG_INDEX, 0)
+        isPlaying = intent.getBooleanExtra(Constant.IS_PLAYING, true)
 
         setUpRecyclerView()
         bindMusicService()
@@ -116,9 +116,9 @@ class SongListActivity : BaseActivity(), SongSelectionListener {
         if (isBound && musicService != null) {
             val intent = Intent(this, MusicService::class.java).apply {
                 action = Constant.ACTION_INIT_SERVICE
-                putParcelableArrayListExtra("songList", songList)
-                putExtra("currentIndex", currentSongIndex)
-                putExtra("autoPlay", true)
+                putParcelableArrayListExtra(Constant.SONG_LIST, songList)
+                putExtra(Constant.CURRENT_INDEX, currentSongIndex)
+                putExtra(Constant.AUTO_PLAY, true)
             }
             startService(intent)
             isPlaying = true

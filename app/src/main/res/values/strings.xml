@@ -7,4 +7,10 @@
     <string name="all_songs">All songs</string>
     <string name="_0_00">0:00</string>
     <string name="duraition">0:00</string>
+    <string name="unknown">Unknown</string>
+    <string name="unknown_artist">Unknown Artist</string>
+    <string name="no_song_available">No Song Available</string>
+    <string name="no_song_here">No song here</string>
+    <string name="_02d_02d">%02d:%02d</string>
+    <string name="no_songs_available">No songs available.</string>
 </resources>
