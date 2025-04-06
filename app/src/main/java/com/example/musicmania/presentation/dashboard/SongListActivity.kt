@@ -197,7 +197,7 @@ class SongListActivity : BaseActivity(), SongSelectionListener {
 
     override fun onDestroy() {
         super.onDestroy()
-//        unbindMusicService()
+        unbindMusicService()
         stopService(intent)
 //        onStop()
 //        stopService(Intent(this,MusicService::class.java))

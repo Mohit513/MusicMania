@@ -573,37 +573,6 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
         }
     }
 
-    override fun onDestroy() {
-        try {
-            if (::handler.isInitialized) {
-                handler.removeCallbacksAndMessages(null)
-            }
-            unregisterReceiver(playbackReceiver)
-            unregisterReceiver(volumeReceiver)
-            unregisterVolumeObserver()
-            stopVolumeUpdates()
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
-        }
-        stopThumbnailRotation()
-
-        if (isPlaying || musicService?.mediaPlayer?.isPlaying == true) {
-            musicService?.apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    createNotificationChannel()
-                }
-                startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
-            }
-        }
-
-        if (isBound) {
-            unbindService(serviceConnection)
-            isBound = false
-        }
-
-        super.onDestroy()
-    }
-
     private fun startVolumeUpdates() {
         volumeHandler.post(volumeRunnable)
     }
@@ -641,5 +610,39 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    override fun onDestroy() {
+        try {
+            // Clean up handlers and receivers
+            if (::handler.isInitialized) {
+                handler.removeCallbacksAndMessages(null)
+            }
+            unregisterReceiver(playbackReceiver)
+            unregisterReceiver(volumeReceiver)
+            unregisterVolumeObserver()
+            stopVolumeUpdates()
+            stopThumbnailRotation()
+
+            // Clean up service
+            if (isBound) {
+                unbindService(serviceConnection)
+                isBound = false
+            }
+
+            // Stop and clean up media player
+            musicService?.apply {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+                stopForeground(true)
+                stopSelf()
+            }
+
+            // Stop the service completely
+            stopService(Intent(this, MusicService::class.java))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        super.onDestroy()
     }
 }

@@ -368,7 +368,7 @@ class MusicService : Service() {
         mediaPlayer = MediaPlayer().apply {
             setDataSource(song.subTitle)
             prepare()
-            
+
             if (autoPlay && requestAudioFocus()) {
                 start()
                 this@MusicService.isPlaying = true
@@ -377,17 +377,17 @@ class MusicService : Service() {
                 }
                 updateNotification()
             }
-            
+
             setOnCompletionListener {
                 playNextSong()
             }
-            
+
             setOnPreparedListener {
                 broadcastProgress(0, duration)
                 broadcastPlaybackState(isPlaying)
                 startProgressUpdates()
             }
-            
+
             setOnErrorListener { _, _, _ ->
                 broadcastPlaybackState(isPlaying)
                 true
@@ -636,16 +636,33 @@ class MusicService : Service() {
         return super.stopService(name)
     }
 
-    override fun onDestroy() {
-
-            abandonAudioFocus()
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // Stop service when app is cleared from RAM
+        try {
             handler.removeCallbacksAndMessages(null)
+            mediaPlayer?.stop()
             mediaPlayer?.release()
             mediaPlayer = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
-
+    override fun onDestroy() {
+        try {
+            abandonAudioFocus()
+            handler.removeCallbacksAndMessages(null)
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         super.onDestroy()
     }
 }
