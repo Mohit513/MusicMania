@@ -183,15 +183,15 @@ class MusicService : Service() {
         when (intent?.action) {
             Constant.ACTION_PLAY_PAUSE -> {
                 togglePlayPause()
-                broadcastPlaybackState()  // Ensure state is broadcast after toggle
+                updateNotification()
             }
             Constant.ACTION_NEXT -> {
                 playNextSong()
-                broadcastPlaybackState()  // Ensure state is broadcast after next
+                updateNotification()
             }
             Constant.ACTION_PREVIOUS -> {
                 playPreviousSong()
-                broadcastPlaybackState()  // Ensure state is broadcast after previous
+                updateNotification()
             }
             Constant.ACTION_SEEK -> {
                 val seekPosition = intent.getIntExtra(Constant.SEEK_POSITION, 0)
@@ -362,48 +362,76 @@ class MusicService : Service() {
     }
 
     private fun playSong(song: SongListDataModel, autoPlay: Boolean = false) {
-        currentSongIndex = songList.indexOfFirst { it.subTitle == song.subTitle }.takeIf { it != -1 } ?: currentSongIndex
-        currentSong = song
-        mediaPlayer?.release()
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(song.subTitle)
-            prepare()
+        try {
+            currentSongIndex = songList.indexOfFirst { it.subTitle == song.subTitle }.takeIf { it != -1 } ?: currentSongIndex
+            currentSong = song
+            mediaPlayer?.release()
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(song.subTitle)
+                prepare()
 
-            if (autoPlay && requestAudioFocus()) {
-                start()
-                this@MusicService.isPlaying = true
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    createNotificationChannel()
+                if (autoPlay && requestAudioFocus()) {
+                    start()
+                    this@MusicService.isPlaying = true
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        createNotificationChannel()
+                    }
+                    updateNotification()
                 }
-                updateNotification()
-            }
 
-            setOnCompletionListener {
-                playNextSong()
-            }
+                setOnCompletionListener {
+                    playNextSong()
+                }
 
-            setOnPreparedListener {
-                broadcastProgress(0, duration)
-                broadcastPlaybackState(isPlaying)
-                startProgressUpdates()
-            }
+                setOnPreparedListener {
+                    broadcastProgress(0, duration)
+                    broadcastPlaybackState(isPlaying)
+                    startProgressUpdates()
+                    updateNotification()
+                }
 
-            setOnErrorListener { _, _, _ ->
-                broadcastPlaybackState(isPlaying)
-                true
+                setOnErrorListener { _, _, _ ->
+                    broadcastPlaybackState(isPlaying)
+                    updateNotification()
+                    true
+                }
             }
+            broadcastPlaybackState(isPlaying)
+            updateNotification()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        broadcastPlaybackState(isPlaying)
     }
 
     private fun playNextSong() {
-        if (currentSongIndex < songList.size - 1) {
-            currentSongIndex++
-        } else {
-            currentSongIndex = 0
+        try {
+            if (currentSongIndex < songList.size - 1) {
+                currentSongIndex++
+            } else {
+                currentSongIndex = 0
+            }
+            val nextSong = songList[currentSongIndex]
+            playSong(nextSong, true)
+            updateNotification()
+            broadcastPlaybackState(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        val nextSong = songList[currentSongIndex]
-        playSong(nextSong, true)
+    }
+
+    private fun playPreviousSong() {
+        try {
+            if (songList.isEmpty()) return
+            currentSongIndex = if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
+            playSong(songList[currentSongIndex], true)
+            updateNotification()
+            broadcastPlaybackState(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (songList.isNotEmpty()) {
+                initializeService(true)
+            }
+        }
     }
 
     private fun togglePlayPause() {
@@ -427,21 +455,6 @@ class MusicService : Service() {
                     startProgressUpdates()
                     updateNotification()
                 }
-            }
-        }
-    }
-
-    private fun playPreviousSong() {
-        try {
-            if (songList.isEmpty()) return
-            currentSongIndex =
-                if (currentSongIndex - 1 < 0) songList.size - 1 else currentSongIndex - 1
-            playSong(songList[currentSongIndex], true)
-            broadcastPlaybackState()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (songList.isNotEmpty()) {
-                initializeService(true)
             }
         }
     }
@@ -550,39 +563,39 @@ class MusicService : Service() {
     }
 
     fun updateNotification() {
-        if (isForegroundService && remoteViews != null && mediaPlayer != null) {
-            try {
-                remoteViews?.apply {
-                    setTextViewText(R.id.notification_song_title, currentSong?.title ?: getString(R.string.unknown))
-                    setTextViewText(
-                        R.id.notification_song_artist, currentSong?.artist ?: getString(R.string.unknown_artist)
-                    )
-                    setImageViewResource(
-                        R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play
-                    )
-                    val isPlaying = try {
-                        mediaPlayer?.isPlaying == true
-                    } catch (e: IllegalStateException) {
-                        false
-                    }
-                    setImageViewResource(
-                        R.id.notification_play_pause,
-                        if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-                    )
-                    mediaPlayer?.let {
-                        try {
-                            setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
-                            broadcastPlaybackState(isPlaying)
-                        } catch (e: IllegalStateException) {
+        try {
+            // Update remote views
+            remoteViews?.apply {
+                setTextViewText(R.id.notification_song_title, currentSong?.title ?: getString(R.string.unknown))
+                setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: getString(R.string.unknown_artist))
+                setImageViewResource(R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play)
+                
+                // Update play/pause icon
+                val isPlaying = mediaPlayer?.isPlaying == true
+                setImageViewResource(
+                    R.id.notification_play_pause,
+                    if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                )
 
-                        }
-                    }
+                // Update progress
+                mediaPlayer?.let { player ->
+                    setProgressBar(
+                        R.id.notification_progress,
+                        player.duration,
+                        player.currentPosition,
+                        false
+                    )
                 }
-                val notificationManager = getSystemService(NotificationManager::class.java)
-                notificationManager?.notify(Constant.NOTIFICATION_ID, notificationBuilder?.build())
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+
+            // Update notification
+            notificationBuilder?.let { builder ->
+                val notification = builder.build()
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                startForeground(Constant.NOTIFICATION_ID, notification)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

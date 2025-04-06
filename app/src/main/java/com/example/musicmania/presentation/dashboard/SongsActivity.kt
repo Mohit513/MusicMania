@@ -307,6 +307,8 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
             ivPlayForward.setOnClickListener {
                 if (songList.isNotEmpty()) {
                     sendServiceCommand(Constant.ACTION_PREVIOUS)
+                    updatePlaybackState(isPlaying)
+                    musicService?.updateNotification()
                 } else {
                     Toast.makeText(
                         this@SongsActivity,
@@ -320,6 +322,8 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
             ivPlayback.setOnClickListener {
                 if (songList.isNotEmpty()) {
                     sendServiceCommand(Constant.ACTION_NEXT)
+                    updatePlaybackState(isPlaying)
+                    musicService?.updateNotification()
                 } else {
                     Toast.makeText(
                         this@SongsActivity,
