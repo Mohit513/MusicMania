@@ -120,9 +120,7 @@ class MusicService : Service() {
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build()
                 ).setAcceptsDelayedFocusGain(true)
                     .setOnAudioFocusChangeListener(afChangeListener).build()
-            createNotificationChannel()
         }
-        setupNotification()
         registerActivityLifecycleCallbacks()
     }
 
@@ -157,11 +155,18 @@ class MusicService : Service() {
     }
 
     private fun setupNotification() {
-        if (!isForegroundService) {
-            remoteViews = RemoteViews(packageName, R.layout.layout_custom_notification)
-            notificationBuilder = createCustomNotification()
-            startForeground(Constant.NOTIFICATION_ID, notificationBuilder?.build())
-            isForegroundService = true
+        try {
+            if (!isForegroundService) {
+                remoteViews = RemoteViews(packageName, R.layout.layout_custom_notification)
+                notificationBuilder = createCustomNotification()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    createNotificationChannel()
+                }
+                startForeground(Constant.NOTIFICATION_ID, notificationBuilder?.build())
+                isForegroundService = true
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -171,10 +176,23 @@ class MusicService : Service() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Create notification channel and start foreground immediately
+        createNotificationChannel()
+        startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+        
         when (intent?.action) {
-            Constant.ACTION_PLAY_PAUSE -> togglePlayPause()
-            Constant.ACTION_NEXT -> playNextSong()
-            Constant.ACTION_PREVIOUS -> playPreviousSong()
+            Constant.ACTION_PLAY_PAUSE -> {
+                togglePlayPause()
+                broadcastPlaybackState()  // Ensure state is broadcast after toggle
+            }
+            Constant.ACTION_NEXT -> {
+                playNextSong()
+                broadcastPlaybackState()  // Ensure state is broadcast after next
+            }
+            Constant.ACTION_PREVIOUS -> {
+                playPreviousSong()
+                broadcastPlaybackState()  // Ensure state is broadcast after previous
+            }
             Constant.ACTION_SEEK -> {
                 val seekPosition = intent.getIntExtra(Constant.SEEK_POSITION, 0)
                 seekTo(seekPosition)
@@ -201,18 +219,25 @@ class MusicService : Service() {
 
         return START_STICKY
     }
+
     fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                Constant.CHANNEL_ID, "Music Service Channel", NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Channel for Music Service"
-                setShowBadge(true)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setSound(null, null)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    Constant.CHANNEL_ID,
+                    "Music Player",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Music Player Controls"
+                    setShowBadge(false)
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                }
+                
+                val notificationManager = getSystemService(NotificationManager::class.java)
+                notificationManager.createNotificationChannel(channel)
             }
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -386,6 +411,7 @@ class MusicService : Service() {
             if (player.isPlaying) {
                 player.pause()
                 isPlaying = false
+                broadcastPlaybackState()
                 abandonAudioFocus()
                 startProgressUpdates()
                 updateNotification()
@@ -393,15 +419,15 @@ class MusicService : Service() {
                 if (requestAudioFocus()) {
                     player.start()
                     isPlaying = true
+                    broadcastPlaybackState()
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         createNotificationChannel()
                     }
                     setupNotification()
-                    updateNotification()
                     startProgressUpdates()
+                    updateNotification()
                 }
             }
-            broadcastPlaybackState()
         }
     }
 
@@ -438,7 +464,6 @@ class MusicService : Service() {
                 mediaPlayer?.let { player ->
                     if (player.isPlaying) {
                         broadcastProgress(player.currentPosition, player.duration)
-                        broadcastPlaybackState()
                         if (isForegroundService && remoteViews != null) {
                             remoteViews?.setProgressBar(
                                 R.id.notification_progress,
@@ -549,7 +574,7 @@ class MusicService : Service() {
                             setProgressBar(R.id.notification_progress, it.duration, it.currentPosition, false)
                             broadcastPlaybackState(isPlaying)
                         } catch (e: IllegalStateException) {
-                            // MediaPlayer not ready yet
+
                         }
                     }
                 }

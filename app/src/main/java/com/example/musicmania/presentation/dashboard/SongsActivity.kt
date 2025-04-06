@@ -80,7 +80,9 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
                     }
 
                     updatePlaybackState(isPlaying)
-
+                    binding.ivSongPlay.setImageResource(
+                        if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                    )
                     if (rotation) {
                         startThumbnailRotation()
                     } else {
@@ -129,6 +131,7 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
 
         setContentView(binding.root)
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        handler = Handler(Looper.getMainLooper())
 
         if (intent.flags and Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT != 0) {
             finish()
@@ -136,6 +139,7 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
         }
         setUpListeners()
         checkAndRequestPermissions()
+        updatePlaybackState(isPlaying)
 
         intent?.let { handleNotificationIntent(it) }
     }
@@ -160,7 +164,9 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
 
     override fun onBackPressed() {
         musicService?.apply {
-            createNotificationChannel()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                createNotificationChannel()
+            }
             startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
         }
         moveTaskToBack(true)
@@ -203,15 +209,17 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     private fun updatePlaybackState(isPlaying: Boolean) {
         this.isPlaying = isPlaying
         binding.apply {
-
-            ivSongPlay.setImageResource(
-                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
-            )
-            ivSongPlay.tag = if (isPlaying) Constant.PLAYING else Constant.PAUSED
-            if (isPlaying) {
-                startThumbnailRotation()
-            } else {
-                stopThumbnailRotation()
+            runOnUiThread {
+                ivSongPlay.setImageResource(
+                    if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                )
+                ivSongPlay.tag = if (isPlaying) Constant.PLAYING else Constant.PAUSED
+                
+                if (isPlaying) {
+                    startThumbnailRotation()
+                } else {
+                    stopThumbnailRotation()
+                }
             }
         }
     }
@@ -374,7 +382,7 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
             updateSongInfo(currentSong)
             initializeService(false)
             binding.ivSongPlay.setImageResource(R.drawable.ic_play)
-            binding.ivSongPlay.tag = "paused"
+            binding.ivSongPlay.tag = Constant.PAUSED
         } else {
             setDefaultSong()
         }
@@ -481,7 +489,6 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
     override fun onSelectSongItem(position: Int) {
         if (position < 0 || position >= songList.size) return
 
-        // Reset all songs' playing state
         songList.forEach { it.isPlaying = false }
 
         currentSongIndex = position
@@ -525,40 +532,66 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
 
     override fun onResume() {
         super.onResume()
-        updateDeviceVolume()
-        registerReceivers()
-        registerVolumeObserver()
         startVolumeUpdates()
-
-        Intent(this, MusicService::class.java).also { intent ->
-            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        }
-
-        handler = Handler(Looper.getMainLooper())
-        startProgressUpdates()
-
-        Intent(this, MusicService::class.java).apply {
-            action = Constant.BROADCAST_PLAYBACK_STATE
-            startService(this)
+        registerReceivers()
+        
+        // Sync play/pause icon state with service
+        musicService?.let { service ->
+            val isPlaying = service.mediaPlayer?.isPlaying ?: false
+            updatePlaybackState(isPlaying)
+            binding.ivSongPlay.setImageResource(
+                if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
+            )
+            binding.ivSongPlay.tag = if (isPlaying) Constant.PLAYING else Constant.PAUSED
+            
+            if (isPlaying) {
+                startThumbnailRotation()
+            } else {
+                stopThumbnailRotation()
+            }
         }
     }
 
     override fun onPause() {
         super.onPause()
         try {
-            unregisterReceiver(volumeReceiver)
+            if (::handler.isInitialized) {
+                handler.removeCallbacksAndMessages(null)
+            }
+            stopThumbnailRotation()
+
+            if (isPlaying || musicService?.mediaPlayer?.isPlaying == true) {
+                musicService?.apply {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        createNotificationChannel()
+                    }
+                    startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onDestroy() {
+        try {
+            if (::handler.isInitialized) {
+                handler.removeCallbacksAndMessages(null)
+            }
             unregisterReceiver(playbackReceiver)
+            unregisterReceiver(volumeReceiver)
             unregisterVolumeObserver()
             stopVolumeUpdates()
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
         }
         stopThumbnailRotation()
-        handler.removeCallbacksAndMessages(null)
 
         if (isPlaying || musicService?.mediaPlayer?.isPlaying == true) {
             musicService?.apply {
-                createNotificationChannel()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    createNotificationChannel()
+                }
                 startForeground(Constant.NOTIFICATION_ID, createCustomNotification().build())
             }
         }
@@ -567,6 +600,8 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
             unbindService(serviceConnection)
             isBound = false
         }
+
+        super.onDestroy()
     }
 
     private fun startVolumeUpdates() {
@@ -606,28 +641,5 @@ open class SongsActivity : BaseActivity(), SongListBottomSheetFragment.SongListL
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    override fun onDestroy() {
-        try {
-            if (isFinishing) {
-                if (!isPlaying && musicService?.mediaPlayer?.isPlaying != true) {
-                    stopService(Intent(this, MusicService::class.java))
-                } else {
-                    musicService?.apply {
-                        createNotificationChannel()
-                        startForeground(
-                            Constant.NOTIFICATION_ID,
-                            createCustomNotification().build()
-                        )
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        musicService?.mediaPlayer?.release()
-        stopService(intent)
-        super.onDestroy()
     }
 }
