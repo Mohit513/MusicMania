@@ -89,7 +89,7 @@ class SongListActivity : BaseActivity(), SongSelectionListener {
         )
 
         binding.recyclerView.apply {
-            layoutManager = LinearLayoutManager(this@SongListActivity)
+//            layoutManager = LinearLayoutManager(this@SongListActivity)
             adapter = songListAdapter
         }
         updateAdapterPlayingState()

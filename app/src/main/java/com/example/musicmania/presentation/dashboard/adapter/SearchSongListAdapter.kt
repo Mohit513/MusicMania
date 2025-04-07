@@ -78,15 +78,29 @@ class SearchSongListAdapter(
             layoutItemSongList.tvTitle.text = song.title
             layoutItemSongList.tvSubTitle.text = song.artist
 
-            val isThisItemPlaying = originalIndex == currentPlayingOriginalIndex && isCurrentlyPlaying
-            ivPlayAndPause.setImageResource(if (isThisItemPlaying) R.drawable.ic_pause else R.drawable.ic_play)
-            ivPlayAndPause.setBackgroundColor(ContextCompat.getColor(context, if (isThisItemPlaying) R.color.pomegranate else R.color.woodsmoke))
-            layoutItemSongList.tvTitle.setTextColor(ContextCompat.getColor(context, if (isThisItemPlaying) R.color.pomegranate else R.color.dusty_gray))
+            val isCurrentSong = originalIndex == currentPlayingOriginalIndex
+            ivPlayAndPause.setImageResource(
+                if (isCurrentSong) {
+                    if (isCurrentlyPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                } else {
+                    R.drawable.ic_play
+                }
+            )
+            ivPlayAndPause.setBackgroundColor(
+                ContextCompat.getColor(
+                    context,
+                    if (isCurrentSong) R.color.pomegranate else R.color.woodsmoke
+                )
+            )
+            layoutItemSongList.tvTitle.setTextColor(
+                ContextCompat.getColor(
+                    context,
+                    if (isCurrentSong) R.color.pomegranate else R.color.dusty_gray
+                )
+            )
 
             root.setOnClickListener {
-                val clickedOriginalIndex = originalIndex
                 listener.onSongSelected(position, originalIndex)
-                // UI update will happen in updatePlayingState when the service broadcasts the change
             }
         }
     }
@@ -99,16 +113,9 @@ class SearchSongListAdapter(
     @SuppressLint("NotifyDataSetChanged")
     fun updatePlayingState(originalIndex: Int, isPlaying: Boolean) {
         val oldPlayingOriginalIndex = currentPlayingOriginalIndex
+        currentPlayingOriginalIndex = originalIndex
+        isCurrentlyPlaying = isPlaying
 
-        if (isPlaying) {
-            currentPlayingOriginalIndex = originalIndex
-            isCurrentlyPlaying = true
-        } else if (currentPlayingOriginalIndex == originalIndex) {
-            currentPlayingOriginalIndex = -1
-            isCurrentlyPlaying = false
-        }
-
-        // Find and update the positions in the filtered list
         val itemsToUpdate = mutableSetOf<Int>()
         if (oldPlayingOriginalIndex != -1) {
             val oldPosition = songList.indexOfFirst { originalIndexMap[it] == oldPlayingOriginalIndex }

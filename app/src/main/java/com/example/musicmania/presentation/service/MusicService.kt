@@ -564,20 +564,18 @@ class MusicService : Service() {
 
     fun updateNotification() {
         try {
-            // Update remote views
+
             remoteViews?.apply {
                 setTextViewText(R.id.notification_song_title, currentSong?.title ?: getString(R.string.unknown))
                 setTextViewText(R.id.notification_song_artist, currentSong?.artist ?: getString(R.string.unknown_artist))
                 setImageViewResource(R.id.ivSongImage, currentSong?.songThumbnail ?: R.drawable.ic_play)
-                
-                // Update play/pause icon
+
                 val isPlaying = mediaPlayer?.isPlaying == true
                 setImageViewResource(
                     R.id.notification_play_pause,
                     if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play
                 )
 
-                // Update progress
                 mediaPlayer?.let { player ->
                     setProgressBar(
                         R.id.notification_progress,
@@ -651,7 +649,6 @@ class MusicService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        // Stop service when app is cleared from RAM
         try {
             handler.removeCallbacksAndMessages(null)
             mediaPlayer?.stop()

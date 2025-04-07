@@ -40,22 +40,23 @@ class SongListAdapter(
             layoutItemSongList.tvSubTitle.text = song.artist
 
             ivPlayAndPause.setImageResource(
-                when {
-                    position == currentPlayingPosition && isCurrentlyPlaying -> R.drawable.ic_pause
-                    else -> R.drawable.ic_play
+                if (position == currentPlayingPosition) {
+                    if (isCurrentlyPlaying) R.drawable.ic_pause else R.drawable.ic_play
+                } else {
+                    R.drawable.ic_play
                 }
             )
 
             ivPlayAndPause.setBackgroundColor(
                 when {
-                    position == currentPlayingPosition && isCurrentlyPlaying -> ContextCompat.getColor(context, R.color.pomegranate)
+                    position == currentPlayingPosition -> ContextCompat.getColor(context, R.color.pomegranate)
                     else -> ContextCompat.getColor(context, R.color.woodsmoke)
                 }
             )
 
             layoutItemSongList.tvTitle.setTextColor(
                 when {
-                    position == currentPlayingPosition && isCurrentlyPlaying -> ContextCompat.getColor(context, R.color.pomegranate)
+                    position == currentPlayingPosition -> ContextCompat.getColor(context, R.color.pomegranate)
                     else -> ContextCompat.getColor(context, R.color.dusty_gray)
                 }
             )
@@ -83,4 +84,3 @@ class SongListAdapter(
         notifyDataSetChanged()
     }
 }
-
