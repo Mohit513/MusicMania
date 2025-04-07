@@ -100,7 +100,9 @@ class SearchSongListAdapter(
             )
 
             root.setOnClickListener {
-                listener.onSongSelected(position, originalIndex)
+                if (!isCurrentSong || !isCurrentlyPlaying) {
+                    listener.onSongSelected(position, originalIndex)
+                }
             }
         }
     }
